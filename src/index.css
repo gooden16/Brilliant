@@ -1,0 +1,29 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #00112E;
+  --cream: #F5F2E7;
+  --medium-grey: #999999;
+  --light-medium-grey: #CCCCCC;
+  --light-grey: #E5E5E5;
+  --gold: #D4AF37;
+  --dusty-pink: #F4C6D7;
+  --light-blue: #ADD8E6;
+  --burgundy: #A83440;
+  --deep-olive: #4C6652;
+  --bronzed-orange: #C27830;
+}
+
+@layer base {
+  body {
+    @apply bg-[#F5F2E7] text-[#00112E] font-montserrat;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-playfair;
+  }
+}
