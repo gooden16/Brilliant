@@ -1,20 +1,64 @@
-import { useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, LayoutDashboard, Plus, Mic, Bell, X, Calendar } from 'lucide-react';
 import CanvasCard from './CanvasCard';
 import CanvasDetail from './CanvasDetail';
+import { supabase } from '../../lib/supabase';
+import AppointmentScheduler from '../AppointmentScheduler';
+import SessionRecorder from '../SessionRecorder';
 import { useSupabase } from '../../contexts/SupabaseContext';
 import type { Canvas } from '../../types';
 
-export default function CanvasView() {
+interface CanvasViewProps {
+  setActiveTab: (tab: 'onboarding' | 'dashboard') => void;
+}
+
+export default function CanvasView({ setActiveTab }: CanvasViewProps) {
   const [selectedCanvas, setSelectedCanvas] = useState<Canvas | null>(null);
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [showSession, setShowSession] = useState(false);
+  const [showSessionNotification, setShowSessionNotification] = useState(true);
+  const [hasScheduledMeeting, setHasScheduledMeeting] = useState(false);
   const { session } = useSupabase();
+
+  useEffect(() => {
+    const checkAppointments = async () => {
+      if (!session?.user) return;
+      
+      const { data: appointments } = await supabase
+        .from('appointments')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('status', 'scheduled')
+        .gte('date', new Date().toISOString().split('T')[0])
+        .order('date', { ascending: true })
+        .limit(1);
+
+      setHasScheduledMeeting(appointments && appointments.length > 0);
+    };
+
+    checkAppointments();
+  }, [session]);
+
   const [canvases, setCanvases] = useState<Canvas[]>([
     {
       id: '1',
-      appointmentId: '1',
+      appointmentId: '2024-Q1',
       keyMetrics: [
         { id: '1', name: 'Portfolio Growth', graphType: 'line', value: 12.5 },
-        { id: '2', name: 'Risk Score', graphType: 'bar', value: 7.2 }
+        { id: '2', name: 'Net Operating Income', graphType: 'line', value: 85000 }
+      ],
+      features: [],
+      users: [],
+      transcription: '',
+      status: 'approved',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: '2',
+      appointmentId: '2024-Q2',
+      keyMetrics: [
+        { id: '3', name: 'Portfolio Growth', graphType: 'line', value: 14.2 },
+        { id: '4', name: 'Net Operating Income', graphType: 'line', value: 92000 }
       ],
       features: [],
       users: [],
@@ -37,10 +81,78 @@ export default function CanvasView() {
     return <CanvasDetail canvas={selectedCanvas} onBack={() => setSelectedCanvas(null)} />;
   }
 
+  if (showScheduler) {
+    return <AppointmentScheduler onBack={() => setShowScheduler(false)} />;
+  }
+
+  if (showSession) {
+    return <SessionRecorder onBack={() => setShowSession(false)} />;
+  }
+
   return (
     <div className="relative">
-      <h2 className="text-2xl font-playfair mb-8">Financial Canvases</h2>
+      <div className="flex items-center gap-3 mb-8">
+        <LayoutDashboard className="w-8 h-8 text-dusty-pink" />
+        <h2 className="text-2xl font-playfair">Dashboard</h2>
+      </div>
       
+      {showSessionNotification && (
+        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center">
+                <Bell className="w-6 h-6 text-dusty-pink" />
+              </div>
+              <div>
+                <h3 className="font-playfair text-lg mb-1">Notifications</h3>
+                <p className="text-cream/60 text-sm">Stay updated on your latest activities</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                  {hasScheduledMeeting ? (
+                    <Mic className="w-5 h-5 text-dusty-pink" />
+                  ) : (
+                    <Calendar className="w-5 h-5 text-dusty-pink" />
+                  )}
+                </div>
+                <div>
+                  {hasScheduledMeeting ? (
+                    <>
+                      <h4 className="font-medium mb-1">Start your session</h4>
+                      <p className="text-sm text-cream/60">Record your next advisory session</p>
+                    </>
+                  ) : (
+                    <>
+                      <h4 className="font-medium mb-1">Schedule your first session</h4>
+                      <p className="text-sm text-cream/60">Set up your next advisory meeting</p>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => hasScheduledMeeting ? setShowSession(true) : setShowScheduler(true)}
+                  className="px-4 py-2 bg-dusty-pink text-navy rounded-lg hover:bg-opacity-90 transition-colors font-medium"
+                >
+                  {hasScheduledMeeting ? 'Start Session' : 'Schedule Now'}
+                </button>
+                <button
+                  onClick={() => setShowSessionNotification(false)}
+                  className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="relative group">
         <div
           id="canvas-scroll-container"
@@ -54,6 +166,20 @@ export default function CanvasView() {
               onClick={() => setSelectedCanvas(canvas)}
             />
           ))}
+          <button
+            onClick={() => setShowScheduler(true)}
+            className="flex-none w-96 bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-colors cursor-pointer group"
+          >
+            <div className="h-[232px] flex flex-col items-center justify-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors flex items-center justify-center">
+                <Plus className="w-8 h-8 text-dusty-pink" />
+              </div>
+              <div className="text-center">
+                <p className="font-playfair text-lg mb-1">Create a New Canvas</p>
+                <p className="font-montserrat text-sm text-cream/60">Schedule a discussion here</p>
+              </div>
+            </div>
+          </button>
         </div>
         
         <button

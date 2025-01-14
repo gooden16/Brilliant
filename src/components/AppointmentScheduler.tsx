@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { format } from 'date-fns';
+import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useSupabase } from '../contexts/SupabaseContext';
 import AppointmentConfirmation from './AppointmentConfirmation';
 import 'react-day-picker/dist/style.css';
 
-export default function AppointmentScheduler() {
+interface AppointmentSchedulerProps {
+  onBack?: () => void;
+}
+export default function AppointmentScheduler({ onBack }: AppointmentSchedulerProps) {
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState('');
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -54,7 +58,17 @@ export default function AppointmentScheduler() {
 
   return (
     <div className="w-full">
-      <h2 className="text-2xl font-playfair mb-8">Schedule Appointment</h2>
+      <div className="flex items-center gap-4 mb-8">
+        {onBack && (
+          <button
+            onClick={onBack}
+            className="p-2 hover:bg-white/10 rounded-full transition-colors"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
+        )}
+        <h2 className="text-2xl font-playfair">Schedule Appointment</h2>
+      </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-8">
         <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm">

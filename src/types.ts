@@ -15,6 +15,43 @@ export interface Canvas {
   users: UserItem[];
   transcription: string;
   status: 'draft' | 'approved';
+  createdAt: string;
+}
+
+export interface PaymentMethod {
+  type: 'ach' | 'zelle' | 'check';
+  routingNumber?: string;
+  accountNumber?: string;
+  accountType?: 'checking' | 'savings';
+  phoneNumber?: string;
+  address?: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+}
+
+export interface Payee {
+  id: string;
+  name: string;
+  type: 'business' | 'individual';
+  paymentMethods: PaymentMethod[];
+  lastPayment: {
+    amount: number;
+    date: string;
+  };
+}
+
+export interface Card {
+  id: string;
+  type: 'physical' | 'virtual';
+  status: 'active' | 'paused' | 'cancelled';
+  lastFour: string;
+  expirationDate: string;
+  cvv?: string;
+  cardNumber?: string;
+  isAuthenticated?: boolean;
 }
 
 export interface TranscriptionSegment {
