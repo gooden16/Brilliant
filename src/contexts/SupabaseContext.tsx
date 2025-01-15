@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 
 interface SupabaseContextType {
   session: Session | null;
@@ -13,7 +12,11 @@ const SupabaseContext = createContext<SupabaseContextType>({
   isLoading: true
 });
 
-export function SupabaseProvider({ children }: { children: React.ReactNode }) {
+interface SupabaseProviderProps {
+  children: (value: SupabaseContextType) => React.ReactNode;
+}
+
+export function SupabaseProvider({ children }: SupabaseProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,7 +46,7 @@ export function SupabaseProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <SupabaseContext.Provider value={{ session, isLoading }}>
-      {children}
+      {children({ session, isLoading })}
     </SupabaseContext.Provider>
   );
 }

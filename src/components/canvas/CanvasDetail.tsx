@@ -1,29 +1,180 @@
-import { ArrowLeft, TrendingUp, Building2, Wallet, Activity, CreditCard, PiggyBank, Banknote, Receipt, Users, ArrowRightLeft, CreditCard as CardIcon, Paintbrush, CreditCard as CardManageIcon } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, TrendingUp, Building2, Wallet, Activity, CreditCard, PiggyBank, Banknote, Receipt, Users, ArrowRightLeft, CreditCard as CardIcon, Paintbrush } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import type { Canvas } from '../../types';
+import { useSupabase } from '../../contexts/SupabaseContext';
 import MoveMoneyView from '../money/MoveMoneyView';
 import CardView from '../cards/CardView';
+import { supabase } from '../../lib/supabase';
+import { LoadingSpinner } from '../LoadingSpinner';
 
 interface CanvasDetailProps {
   canvas: Canvas;
   onBack: () => void;
 }
 
-export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
-  const [showMoveMoneyView, setShowMoveMoneyView] = useState(false);
-  const [showCardView, setShowCardView] = useState(false);
+interface CanvasProduct {
+  id: string;
+  name: string;
+  type: 'checking' | 'savings' | 'cd' | 'credit' | 'debit';
+  balance: number;
+  yield_rate: number;
+  has_cards: boolean;
+}
 
-  if (showMoveMoneyView) {
-    return <MoveMoneyView onBack={() => setShowMoveMoneyView(false)} />;
+interface CanvasMetric {
+  id: string;
+  name: string;
+  value: number;
+  graph_type: string;
+  is_primary: boolean;
+}
+
+interface PaymentMethod {
+  id: string;
+  type: 'ach' | 'wire' | 'check' | 'card';
+  is_enabled: boolean;
+}
+
+export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
+  const { session } = useSupabase();
+  const [currentView, setCurrentView] = useState<'overview' | 'money' | 'cards'>('overview');
+  const [products, setProducts] = useState<CanvasProduct[]>([]);
+  const [metrics, setMetrics] = useState<CanvasMetric[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [historicalNOI] = useState(() => {
+    const baseNOI = 35.2;
+    return Array.from({ length: 12 }).map((_, i) => ({
+      date: new Date(Date.now() - (11 - i) * 86400000 * 2),
+      value: Math.min(baseNOI + (Math.random() * 2 - 1), 40) // Cap at 40%
+    }));
+  });
+  const [transactions] = useState([
+    {
+      id: '1',
+      date: new Date().toISOString(),
+      description: 'Monthly Rent Payment',
+      amount: -5000,
+      type: 'expense'
+    },
+    {
+      id: '2',
+      date: new Date(Date.now() - 86400000).toISOString(),
+      description: 'Property Income',
+      amount: 8500,
+      type: 'income'
+    }
+  ]);
+
+  useEffect(() => {
+    const fetchCanvasData = async () => {
+      if (!session?.user) return;
+
+      // Set default products for Property Co
+      if (canvas.type === 'property') {
+        setProducts([
+          {
+            id: crypto.randomUUID(),
+            name: 'Operating Account',
+            type: 'checking',
+            balance: 245000,
+            yield_rate: 0.1,
+            has_cards: true
+          },
+          {
+            id: crypto.randomUUID(),
+            name: 'Reserve Account',
+            type: 'savings',
+            balance: 500000,
+            yield_rate: 4.5,
+            has_cards: false
+          },
+          {
+            id: crypto.randomUUID(),
+            name: 'Credit Card',
+            type: 'credit',
+            balance: -15000,
+            yield_rate: 0,
+            has_cards: true
+          },
+          {
+            id: crypto.randomUUID(),
+            name: 'Mortgage',
+            type: 'cd',
+            balance: -2500000,
+            yield_rate: 5.25,
+            has_cards: false
+          }
+        ]);
+        
+        setMetrics([
+          {
+            id: crypto.randomUUID(),
+            name: 'Net Operating Income',
+            value: 35.2,
+            graph_type: 'line',
+            is_primary: true
+          },
+          {
+            id: crypto.randomUUID(),
+            name: 'Target NOI',
+            value: 30.0,
+            graph_type: 'line',
+            is_primary: false
+          }
+        ]);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const [productsRes, metricsRes, paymentsRes] = await Promise.all([
+          supabase
+            .from('canvas_products')
+            .select('*')
+            .eq('canvas_id', canvas.id),
+          supabase
+            .from('canvas_metrics')
+            .select('*')
+            .eq('canvas_id', canvas.id),
+          supabase
+            .from('payment_methods')
+            .select('*')
+            .eq('canvas_id', canvas.id)
+        ]);
+
+        if (productsRes.error) throw productsRes.error;
+        if (metricsRes.error) throw metricsRes.error;
+        if (paymentsRes.error) throw paymentsRes.error;
+
+        setProducts(productsRes.data || []);
+        setMetrics(metricsRes.data || []);
+        setPaymentMethods(paymentsRes.data || []);
+      } catch (error) {
+        console.error('Error fetching canvas data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCanvasData();
+  }, [canvas.id, session?.user]);
+
+  if (currentView === 'money') {
+    return <MoveMoneyView onBack={() => setCurrentView('overview')} />;
   }
 
-  if (showCardView) {
-    return <CardView onBack={() => setShowCardView(false)} />;
+  if (currentView === 'cards') {
+    return <CardView onBack={() => setCurrentView('overview')} />;
+  }
+
+  if (isLoading) {
+    return <LoadingSpinner />;
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
@@ -31,279 +182,178 @@ export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <div>
-            <h2 className="text-2xl font-playfair">Property Co Canvas</h2>
-            <p className="text-sm text-cream/60">Last updated {new Date(canvas.createdAt).toLocaleDateString()}</p>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => setShowMoveMoneyView(true)}
-            className="px-4 py-2 bg-white/10 text-cream rounded-lg hover:bg-white/20 transition-colors font-medium flex items-center gap-2"
-          >
-            <ArrowRightLeft className="w-4 h-4" />
-            Move Money
-          </button>
-          
-          <button
-            className="px-4 py-2 bg-white/10 text-cream rounded-lg hover:bg-white/20 transition-colors font-medium flex items-center gap-2"
-            onClick={() => setShowCardView(true)}
-          >
-            <CardIcon className="w-4 h-4" />
-            Cards
-          </button>
-          
-          <button
-            className="px-4 py-2 bg-white/10 text-cream rounded-lg hover:bg-white/20 transition-colors font-medium flex items-center gap-2"
-          >
-            <Paintbrush className="w-4 h-4" />
-            Edit
-          </button>
-          
-          <button
-            className="px-4 py-2 bg-dusty-pink text-navy rounded-lg hover:bg-opacity-90 transition-colors font-medium"
-          >
-            Export Report
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-4 gap-6 mb-8">
-        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-white/10 rounded-lg">
-              <Wallet className="w-5 h-5 text-dusty-pink" />
-            </div>
-            <div>
-              <div className="text-sm text-cream/60">Net Operating Income</div>
-              <div className="text-xl font-medium">$85,000</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <TrendingUp className="w-4 h-4 text-green-400" />
-            <span className="text-green-400">+12.5%</span>
-            <span className="text-cream/60">vs last month</span>
-          </div>
-        </div>
-
-        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-white/10 rounded-lg">
-              <Activity className="w-5 h-5 text-dusty-pink" />
-            </div>
-            <div>
-              <div className="text-sm text-cream/60">Portfolio Growth</div>
-              <div className="text-xl font-medium">14.2%</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <TrendingUp className="w-4 h-4 text-green-400" />
-            <span className="text-green-400">+2.3%</span>
-            <span className="text-cream/60">vs last month</span>
-          </div>
-        </div>
-
-        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-white/10 rounded-lg">
-              <Building2 className="w-5 h-5 text-dusty-pink" />
-            </div>
-            <div>
-              <div className="text-sm text-cream/60">Properties</div>
-              <div className="text-xl font-medium">12</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <TrendingUp className="w-4 h-4 text-green-400" />
-            <span className="text-green-400">+1</span>
-            <span className="text-cream/60">new this month</span>
-          </div>
-        </div>
-
-        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-white/10 rounded-lg">
-              <Users className="w-5 h-5 text-dusty-pink" />
-            </div>
-            <div>
-              <div className="text-sm text-cream/60">Total Tenants</div>
-              <div className="text-xl font-medium">48</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm">
-            <TrendingUp className="w-4 h-4 text-green-400" />
-            <span className="text-green-400">95%</span>
-            <span className="text-cream/60">occupancy rate</span>
-          </div>
+          <h2 className="text-2xl font-playfair">{canvas.name}</h2>
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-3 bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-playfair text-lg">Financial Performance</h3>
-            <div className="flex items-center gap-3">
-              <button className="px-3 py-1.5 text-sm bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
-                Monthly
-              </button>
-              <button className="px-3 py-1.5 text-sm bg-dusty-pink text-navy rounded-lg">
-                Quarterly
-              </button>
-              <button className="px-3 py-1.5 text-sm bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
-                Yearly
-              </button>
-          </div>
-            </div>
-
-          <div className="h-80 bg-white/5 rounded-lg p-6">
-            <svg className="w-full h-full" viewBox="0 0 800 300">
-              <path
-                d="M0,150 C100,100 200,200 300,50 C400,150 500,100 600,200 C700,150 800,50"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                className="text-dusty-pink"
-              />
-              {/* Data points */}
-              <circle cx="0" cy="150" r="6" className="fill-dusty-pink" />
-              <circle cx="200" cy="200" r="6" className="fill-dusty-pink" />
-              <circle cx="400" cy="150" r="6" className="fill-dusty-pink" />
-              <circle cx="600" cy="200" r="6" className="fill-dusty-pink" />
-              <circle cx="800" cy="50" r="6" className="fill-dusty-pink" />
-              
-              {/* Grid lines */}
-              <line x1="0" y1="0" x2="0" y2="300" stroke="currentColor" strokeWidth="1" className="text-cream/10" />
-              <line x1="200" y1="0" x2="200" y2="300" stroke="currentColor" strokeWidth="1" className="text-cream/10" />
-              <line x1="400" y1="0" x2="400" y2="300" stroke="currentColor" strokeWidth="1" className="text-cream/10" />
-              <line x1="600" y1="0" x2="600" y2="300" stroke="currentColor" strokeWidth="1" className="text-cream/10" />
-              <line x1="800" y1="0" x2="800" y2="300" stroke="currentColor" strokeWidth="1" className="text-cream/10" />
-              
-              <line x1="0" y1="75" x2="800" y2="75" stroke="currentColor" strokeWidth="1" className="text-cream/10" />
-              <line x1="0" y1="150" x2="800" y2="150" stroke="currentColor" strokeWidth="1" className="text-cream/10" />
-              <line x1="0" y1="225" x2="800" y2="225" stroke="currentColor" strokeWidth="1" className="text-cream/10" />
-            </svg>
+        {/* Products Section */}
+        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+          <h3 className="font-playfair text-lg mb-6">Products</h3>
+          <div className="space-y-4 max-h-[400px] overflow-y-auto">
+            {products.map((product) => (
+              <div
+                key={product.id}
+                className="bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-white/10 rounded-lg">
+                    {product.type === 'checking' && <Building2 className="w-5 h-5 text-dusty-pink" />}
+                    {product.type === 'savings' && <PiggyBank className="w-5 h-5 text-dusty-pink" />}
+                    {product.type === 'cd' && <Banknote className="w-5 h-5 text-dusty-pink" />}
+                    {product.type === 'credit' && <Receipt className="w-5 h-5 text-dusty-pink" />}
+                    {product.type === 'debit' && <CardIcon className="w-5 h-5 text-dusty-pink" />}
+                  </div>
+                  <div>
+                    <div className="font-medium">{product.name}</div>
+                    <div className="text-sm text-cream/60">{product.type}</div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-cream/60">Balance</span>
+                  <span className={`font-medium ${product.balance < 0 ? 'text-red-500' : ''}`}>
+                    ${Math.abs(product.balance).toLocaleString()}
+                    {product.balance < 0 ? ' (Due)' : ''}
+                  </span>
+                </div>
+                {product.yield_rate && (
+                  <div className="flex items-center justify-between text-sm mt-1">
+                    <span className="text-cream/60">Yield</span>
+                    <span className="font-medium">{product.yield_rate}%</span>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
 
-        <div className="col-span-3 grid grid-cols-4 gap-6 mt-6">
-          <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-white/10 rounded-lg">
-                <Wallet className="w-5 h-5 text-dusty-pink" />
+        {/* Actions Section */}
+        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+          <h3 className="font-playfair text-lg mb-6">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              onClick={() => setCurrentView('money')}
+              className="bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors text-left group"
+            >
+              <div className="p-3 bg-white/10 rounded-lg w-fit mb-3 group-hover:bg-white/20 transition-colors">
+                <ArrowRightLeft className="w-5 h-5 text-dusty-pink" />
               </div>
-              <div>
-                <div className="text-sm text-cream/60">Operating Account</div>
-                <div className="text-xl font-medium">$245,000</div>
-              </div>
-            </div>
-          </div>
+              <div className="font-medium mb-1">Move Money</div>
+              <div className="text-sm text-cream/60">Transfer funds</div>
+            </button>
 
-          <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-white/10 rounded-lg">
-                <PiggyBank className="w-5 h-5 text-dusty-pink" />
+            <button
+              onClick={() => setCurrentView('cards')}
+              className="bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors text-left group"
+            >
+              <div className="p-3 bg-white/10 rounded-lg w-fit mb-3 group-hover:bg-white/20 transition-colors">
+                <CardIcon className="w-5 h-5 text-dusty-pink" />
               </div>
-              <div>
-                <div className="text-sm text-cream/60">Reserve Account</div>
-                <div className="text-xl font-medium">$180,000</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-white/10 rounded-lg">
-                <CreditCard className="w-5 h-5 text-dusty-pink" />
-              </div>
-              <div>
-                <div className="text-sm text-cream/60">Credit Line</div>
-                <div className="text-xl font-medium">$50,000</div>
-                <div className="text-xs text-cream/40">of $200,000</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-white/10 rounded-lg">
-                <Banknote className="w-5 h-5 text-dusty-pink" />
-              </div>
-              <div>
-                <div className="text-sm text-cream/60">Mortgage Balance</div>
-                <div className="text-xl font-medium">$3.2M</div>
-                <div className="text-xs text-cream/40">4.5% fixed</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-span-3 bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 mt-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-playfair text-lg">Recent Transactions</h3>
-            <button className="text-sm text-cream/60 hover:text-cream transition-colors">
-              View All
+              <div className="font-medium mb-1">Cards</div>
+              <div className="text-sm text-cream/60">Manage cards</div>
             </button>
           </div>
-          
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-white/10 rounded-lg">
-                  <Receipt className="w-4 h-4 text-dusty-pink" />
-                </div>
-                <div>
-                  <div className="font-medium">Rent Payment - 123 Main St</div>
-                  <div className="text-sm text-cream/60">Operating Account</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-medium text-green-400">+$8,500</div>
-                <div className="text-sm text-cream/60">Mar 1, 2024</div>
-              </div>
-            </div>
+        </div>
 
-            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-white/10 rounded-lg">
-                  <Receipt className="w-4 h-4 text-dusty-pink" />
-                </div>
-                <div>
-                  <div className="font-medium">Property Tax Payment</div>
-                  <div className="text-sm text-cream/60">Reserve Account</div>
+        {/* Metrics Section */}
+        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+          <h3 className="font-playfair text-lg mb-6">Key Metrics</h3>
+          {metrics.length > 0 && (
+            <div className="relative">
+              <div className="h-48 flex items-end">
+                {historicalNOI.map((point, i) => {
+                  const targetNoi = 30;
+                  const maxValue = 40; // Y-axis maximum fixed at 40%
+                  
+                  return (
+                    <div key={i} className="flex-1 relative">
+                      {/* Target NOI watermark */}
+                      <div 
+                        className="absolute inset-0 bg-cream/5"
+                        style={{ height: `${(targetNoi / maxValue) * 100}%` }}
+                      />
+                      {/* Actual NOI bar */}
+                      <div 
+                        className="relative bg-dusty-pink/40 hover:bg-dusty-pink/60 transition-colors rounded-t-lg cursor-pointer group"
+                        style={{ height: `${(point.value / maxValue) * 100}%` }}
+                      >
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-navy/90 text-cream px-2 py-1 rounded text-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                          NOI: {point.value.toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="text-xs text-cream/40 mt-2 text-center">
+                        {point.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* Y-axis labels */}
+                <div className="absolute left-0 inset-y-0 flex flex-col justify-between pointer-events-none">
+                  {[40, 30, 20, 10, 0].map((value) => (
+                    <div key={value} className="text-xs text-cream/40 -translate-x-6">
+                      {value}%
+                    </div>
+                  ))}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="font-medium text-burgundy">-$12,000</div>
-                <div className="text-sm text-cream/60">Feb 28, 2024</div>
+              <div className="flex items-center justify-between mt-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-dusty-pink/40 rounded" />
+                  <span className="text-cream/60">Current NOI: {historicalNOI[historicalNOI.length - 1].value.toFixed(1)}%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-cream/5 rounded" />
+                  <span className="text-cream/60">Target NOI: 30.0%</span>
+                </div>
               </div>
             </div>
-
-            <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-white/10 rounded-lg">
-                  <Receipt className="w-4 h-4 text-dusty-pink" />
-                </div>
-                <div>
-                  <div className="font-medium">Mortgage Payment</div>
-                  <div className="text-sm text-cream/60">Operating Account</div>
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="font-medium text-burgundy">-$15,500</div>
-                <div className="text-sm text-cream/60">Feb 25, 2024</div>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {canvas.transcription && (
-        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 mt-6">
-          <h3 className="font-playfair text-lg mb-4">Session Notes</h3>
-          <p className="text-cream/70 whitespace-pre-wrap">{canvas.transcription}</p>
+      {/* Transactions Section */}
+      <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="font-playfair text-lg">Recent Transactions</h3>
+          <button className="text-sm text-cream/60 hover:text-cream transition-colors">
+            View All
+          </button>
         </div>
-      )}
+        <div className="space-y-4">
+          {transactions.map((transaction) => (
+            <div
+              key={transaction.id}
+              className="flex items-center justify-between p-4 bg-white/5 rounded-xl"
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-10 h-10 rounded-lg ${
+                  transaction.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10'
+                } flex items-center justify-center`}>
+                  {transaction.type === 'income' ? (
+                    <TrendingUp className={`w-5 h-5 ${
+                      transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                    }`} />
+                  ) : (
+                    <ArrowRightLeft className="w-5 h-5 text-red-500" />
+                  )}
+                </div>
+                <div>
+                  <div className="font-medium">{transaction.description}</div>
+                  <div className="text-sm text-cream/60">
+                    {new Date(transaction.date).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+              <div className={`font-medium ${
+                transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+              }`}>
+                {transaction.type === 'income' ? '+' : '-'}
+                ${Math.abs(transaction.amount).toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

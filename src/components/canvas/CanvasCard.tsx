@@ -9,13 +9,21 @@ interface CanvasCardProps {
 export default function CanvasCard({ canvas, onClick }: CanvasCardProps) {
   const primaryMetric = canvas.keyMetrics[0];
 
+  const formatMetricValue = (metric: typeof primaryMetric) => {
+    if (!metric) return '';
+    if (metric.name === 'Balance') {
+      return `$${metric.value?.toLocaleString()}`;
+    }
+    return `${metric.value}%`;
+  };
+
   return (
     <div
       onClick={onClick}
       className="flex-none w-96 bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 hover:border-white/20 transition-colors cursor-pointer group"
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-playfair text-lg">Q{canvas.id} Performance</h3>
+        <h3 className="font-playfair text-lg">{canvas.name}</h3>
         <span className="text-xs text-cream/60">
           {new Date(canvas.createdAt).toLocaleDateString()}
         </span>
@@ -26,12 +34,7 @@ export default function CanvasCard({ canvas, onClick }: CanvasCardProps) {
           <div className="flex items-center justify-between">
             <span className="text-sm text-cream/70">{primaryMetric.name}</span>
             <span className="text-lg font-medium">
-              {typeof primaryMetric.value === 'number' && 
-                (primaryMetric.name === 'Net Operating Income' 
-                  ? `$${primaryMetric.value.toLocaleString()}`
-                  : `${primaryMetric.value}%`
-                )
-              }
+              {formatMetricValue(primaryMetric)}
             </span>
           </div>
 

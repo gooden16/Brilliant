@@ -39,13 +39,15 @@ export default function CanvasView({ setActiveTab }: CanvasViewProps) {
     checkAppointments();
   }, [session]);
 
-  const [canvases, setCanvases] = useState<Canvas[]>([
+  const [canvases] = useState<Canvas[]>([
     {
-      id: '1',
+      id: 'c81d4e2e-bcf2-11e6-869b-7df92533d2db',
       appointmentId: '2024-Q1',
+      name: 'Property Co',
+      type: 'property',
       keyMetrics: [
-        { id: '1', name: 'Portfolio Growth', graphType: 'line', value: 12.5 },
-        { id: '2', name: 'Net Operating Income', graphType: 'line', value: 85000 }
+        { id: 'a81d4e2e-bcf2-11e6-869b-7df92533d2db', name: 'Net Operating Income', graphType: 'line', value: 35.2 },
+        { id: 'b81d4e2e-bcf2-11e6-869b-7df92533d2db', name: 'Target NOI', graphType: 'line', value: 30.0 }
       ],
       features: [],
       users: [],
@@ -54,19 +56,20 @@ export default function CanvasView({ setActiveTab }: CanvasViewProps) {
       createdAt: new Date().toISOString()
     },
     {
-      id: '2',
+      id: 'd81d4e2e-bcf2-11e6-869b-7df92533d2db',
       appointmentId: '2024-Q2',
+      name: 'Rainy Day',
+      type: 'investment',
       keyMetrics: [
-        { id: '3', name: 'Portfolio Growth', graphType: 'line', value: 14.2 },
-        { id: '4', name: 'Net Operating Income', graphType: 'line', value: 92000 }
+        { id: 'e81d4e2e-bcf2-11e6-869b-7df92533d2db', name: 'Balance', graphType: 'line', value: 125000 },
+        { id: 'f81d4e2e-bcf2-11e6-869b-7df92533d2db', name: 'Yield', graphType: 'line', value: 4.8 }
       ],
       features: [],
       users: [],
       transcription: '',
       status: 'approved',
       createdAt: new Date().toISOString()
-    },
-    // Add more mock data as needed
+    }
   ]);
 
   const scrollContainer = (direction: 'left' | 'right') => {
@@ -78,7 +81,12 @@ export default function CanvasView({ setActiveTab }: CanvasViewProps) {
   };
 
   if (selectedCanvas) {
-    return <CanvasDetail canvas={selectedCanvas} onBack={() => setSelectedCanvas(null)} />;
+    return (
+      <CanvasDetail
+        canvas={selectedCanvas}
+        onBack={() => setSelectedCanvas(null)}
+      />
+    );
   }
 
   if (showScheduler) {
@@ -157,13 +165,16 @@ export default function CanvasView({ setActiveTab }: CanvasViewProps) {
         <div
           id="canvas-scroll-container"
           className="flex space-x-6 overflow-x-auto scrollbar-hide pb-4 scroll-smooth"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {canvases.map((canvas) => (
             <CanvasCard
               key={canvas.id}
               canvas={canvas}
-              onClick={() => setSelectedCanvas(canvas)}
+              onClick={() => {
+                setSelectedCanvas(canvas);
+                setShowScheduler(false);
+                setShowSession(false);
+              }}
             />
           ))}
           <button

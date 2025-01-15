@@ -134,7 +134,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
   };
 
   const handleAdd = (type: 'metric' | 'feature' | 'user') => {
-    const id = crypto.randomUUID();
+    const id = self.crypto.randomUUID();
     switch (type) {
       case 'metric':
         setMetrics(prev => [...prev, { id, name: 'New Metric', graphType: 'line' }]);
@@ -310,11 +310,17 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
       return;
     }
 
+    const canvasName = `Canvas ${new Date().toLocaleDateString()}`;
+    const canvasId = self.crypto.randomUUID();
+
     try {
       const { error } = await supabase
         .from('canvases')
         .insert([
           {
+            id: canvasId,
+            name: canvasName,
+            type: 'property',
             key_metrics: metrics.map(m => m.name),
             features: features.map(f => f.name),
             users: users.map(u => u.name),

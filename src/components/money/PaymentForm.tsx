@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, Calendar, RefreshCcw, Building2, Phone, MapPin, Building } from 'lucide-react';
+import { ArrowLeft, Calendar, RefreshCcw, Building2, Phone, MapPin, Building, ChevronDown, Check } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import type { Payee } from '../../types';
 import 'react-day-picker/dist/style.css';
@@ -10,16 +10,200 @@ interface PaymentFormProps {
 }
 
 type RecurrenceType = 'one-time' | 'weekly' | 'monthly' | 'quarterly';
+type WeekDay = 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday';
+type MonthDay = 1 | 5 | 10 | 15 | 20 | 25 | 'last';
+type QuarterDay = { month: 1 | 2 | 3, day: 1 | 15 };
+
+interface RecurrenceDetails {
+  type: RecurrenceType;
+  weekDay?: WeekDay;
+  monthDay?: MonthDay;
+  quarterDay?: QuarterDay;
+}
 
 export default function PaymentForm({ payee, onBack }: PaymentFormProps) {
   const [amount, setAmount] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [showCalendar, setShowCalendar] = useState(false);
-  const [recurrence, setRecurrence] = useState<RecurrenceType>('one-time');
+  const [recurrence, setRecurrence] = useState<RecurrenceDetails>({ type: 'one-time' });
+  const [showRecurrenceOptions, setShowRecurrenceOptions] = useState(false);
+
+  const weekDays: { value: WeekDay; label: string }[] = [
+    { value: 'sunday', label: 'Sunday' },
+    { value: 'monday', label: 'Monday' },
+    { value: 'tuesday', label: 'Tuesday' },
+    { value: 'wednesday', label: 'Wednesday' },
+    { value: 'thursday', label: 'Thursday' },
+    { value: 'friday', label: 'Friday' },
+    { value: 'saturday', label: 'Saturday' }
+  ];
+
+  const monthDays: { value: MonthDay; label: string }[] = [
+    { value: 1, label: '1st' },
+    { value: 5, label: '5th' },
+    { value: 10, label: '10th' },
+    { value: 15, label: '15th' },
+    { value: 20, label: '20th' },
+    { value: 25, label: '25th' },
+    { value: 'last', label: 'Last day' }
+  ];
+
+  const quarterMonths = [
+    { value: 1, label: 'First month' },
+    { value: 2, label: 'Second month' },
+    { value: 3, label: 'Third month' }
+  ];
+
+  const quarterDays = [
+    { value: 1, label: '1st' },
+    { value: 15, label: '15th' }
+  ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle payment submission
+  };
+
+  const getRecurrenceDescription = () => {
+    switch (recurrence.type) {
+      case 'weekly':
+        return `Every ${recurrence.weekDay || 'week'}`;
+      case 'monthly':
+        return `Every ${recurrence.monthDay === 'last' ? 'last day' : `${recurrence.monthDay}${getOrdinalSuffix(Number(recurrence.monthDay))}`} of the month`;
+      case 'quarterly':
+        if (recurrence.quarterDay) {
+          const month = quarterMonths.find(m => m.value === recurrence.quarterDay?.month)?.label;
+          const day = recurrence.quarterDay.day === 1 ? '1st' : '15th';
+          return `Every ${day} of the ${month?.toLowerCase()} of each quarter`;
+        }
+        return 'Quarterly';
+      default:
+        return 'One time payment';
+    }
+  };
+
+  const getOrdinalSuffix = (n: number) => {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  };
+
+  const renderRecurrenceOptions = () => {
+    switch (recurrence.type) {
+      case 'weekly':
+        return (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-cream/80 mb-2">
+              Day of Week
+            </label>
+            <div className="grid grid-cols-7 gap-2">
+              {weekDays.map((day) => (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => setRecurrence(prev => ({ ...prev, weekDay: day.value }))}
+                  className={`p-2 rounded-lg text-sm transition-colors ${
+                    recurrence.weekDay === day.value
+                      ? 'bg-dusty-pink text-navy'
+                      : 'bg-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  {day.label.slice(0, 3)}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'monthly':
+        return (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-cream/80 mb-2">
+              Day of Month
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {monthDays.map((day) => (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => setRecurrence(prev => ({ ...prev, monthDay: day.value }))}
+                  className={`p-2 rounded-lg text-sm transition-colors ${
+                    recurrence.monthDay === day.value
+                      ? 'bg-dusty-pink text-navy'
+                      : 'bg-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  {day.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'quarterly':
+        return (
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-cream/80 mb-2">
+                Month of Quarter
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {quarterMonths.map((month) => (
+                  <button
+                    key={month.value}
+                    type="button"
+                    onClick={() => setRecurrence(prev => ({
+                      ...prev,
+                      quarterDay: {
+                        month: month.value as 1 | 2 | 3,
+                        day: prev.quarterDay?.day || 1
+                      }
+                    }))}
+                    className={`p-2 rounded-lg text-sm transition-colors ${
+                      recurrence.quarterDay?.month === month.value
+                        ? 'bg-dusty-pink text-navy'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    {month.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-cream/80 mb-2">
+                Day of Month
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {quarterDays.map((day) => (
+                  <button
+                    key={day.value}
+                    type="button"
+                    onClick={() => setRecurrence(prev => ({
+                      ...prev,
+                      quarterDay: {
+                        month: prev.quarterDay?.month || 1,
+                        day: day.value as 1 | 15
+                      }
+                    }))}
+                    className={`p-2 rounded-lg text-sm transition-colors ${
+                      recurrence.quarterDay?.day === day.value
+                        ? 'bg-dusty-pink text-navy'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
@@ -127,37 +311,48 @@ export default function PaymentForm({ payee, onBack }: PaymentFormProps) {
               <label className="block text-sm font-medium text-cream/80 mb-2">
                 Frequency
               </label>
-              <div className="grid grid-cols-4 gap-3">
-                {[
-                  { value: 'one-time', label: 'One Time' },
-                  { value: 'weekly', label: 'Weekly' },
-                  { value: 'monthly', label: 'Monthly' },
-                  { value: 'quarterly', label: 'Quarterly' }
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setRecurrence(option.value as RecurrenceType)}
-                    className={`p-3 rounded-xl border transition-colors ${
-                      recurrence === option.value
-                        ? 'border-dusty-pink bg-white/5'
-                        : 'border-white/10 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="text-sm">{option.label}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowRecurrenceOptions(!showRecurrenceOptions)}
+                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-cream flex items-center justify-between hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <RefreshCcw className="w-4 h-4 text-dusty-pink" />
+                    <span>{getRecurrenceDescription()}</span>
+                  </div>
+                  <ChevronDown className="w-5 h-5" />
+                </button>
 
-            {recurrence !== 'one-time' && (
-              <div className="p-4 bg-white/5 rounded-xl flex items-center gap-3">
-                <RefreshCcw className="w-5 h-5 text-dusty-pink" />
-                <div className="text-sm">
-                  Payment will repeat {recurrence} until canceled
-                </div>
+                {showRecurrenceOptions && (
+                  <div className="absolute top-full left-0 right-0 mt-2 bg-navy/95 border border-white/10 rounded-xl backdrop-blur-sm overflow-hidden z-10">
+                    {[
+                      { value: 'one-time', label: 'One time payment' },
+                      { value: 'weekly', label: 'Weekly' },
+                      { value: 'monthly', label: 'Monthly' },
+                      { value: 'quarterly', label: 'Quarterly' }
+                    ].map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setRecurrence({ type: option.value as RecurrenceType });
+                          setShowRecurrenceOptions(false);
+                        }}
+                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors"
+                      >
+                        <span>{option.label}</span>
+                        {recurrence.type === option.value && (
+                          <Check className="w-4 h-4 ml-auto" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+
+              {renderRecurrenceOptions()}
+            </div>
           </div>
         </div>
 

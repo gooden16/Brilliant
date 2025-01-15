@@ -12,6 +12,7 @@ export default function CardView({ onBack }: CardViewProps) {
   const [showCreateVirtual, setShowCreateVirtual] = useState(false);
   const [authenticatedCards, setAuthenticatedCards] = useState<Set<string>>(new Set());
   const [showSensitiveData, setShowSensitiveData] = useState<Set<string>>(new Set());
+  const [showCardNumbers, setShowCardNumbers] = useState<Set<string>>(new Set());
   const [isAuthenticating, setIsAuthenticating] = useState<string | null>(null);
   const { session } = useSupabase();
 
@@ -22,7 +23,7 @@ export default function CardView({ onBack }: CardViewProps) {
       status: 'active',
       lastFour: '4567',
       expirationDate: '12/25',
-      cardNumber: '4532 •••• •••• 4567',
+      cardNumber: '4532 1234 5678 4567',
       cvv: '123'
     },
     {
@@ -31,7 +32,7 @@ export default function CardView({ onBack }: CardViewProps) {
       status: 'active',
       lastFour: '8901',
       expirationDate: '03/26',
-      cardNumber: '4532 •••• •••• 8901',
+      cardNumber: '4532 8765 4321 8901',
       cvv: '456'
     }
   ]);
@@ -46,6 +47,18 @@ export default function CardView({ onBack }: CardViewProps) {
     } finally {
       setIsAuthenticating(null);
     }
+  };
+
+  const handleToggleCardNumber = (cardId: string) => {
+    setShowCardNumbers(prev => {
+      const next = new Set(prev);
+      if (next.has(cardId)) {
+        next.delete(cardId);
+      } else {
+        next.add(cardId);
+      }
+      return next;
+    });
   };
 
   const handleToggleCardStatus = async (card: Card) => {
@@ -77,6 +90,16 @@ export default function CardView({ onBack }: CardViewProps) {
   const handleCancelCard = async (cardId: string) => {
     if (!confirm('Are you sure you want to cancel this card? This action cannot be undone.')) return;
     // In a real app, we would cancel the card in Supabase here
+  };
+
+  const maskCardNumber = (cardNumber: string) => {
+    const parts = cardNumber.split(' ');
+    return [
+      parts[0],
+      '••••',
+      '••••',
+      parts[3]
+    ].join(' ');
   };
 
   if (showCreateVirtual) {
@@ -116,6 +139,7 @@ export default function CardView({ onBack }: CardViewProps) {
   const CardDetails = ({ card }: { card: Card }) => {
     const isAuthenticated = authenticatedCards.has(card.id);
     const showSensitive = showSensitiveData.has(card.id);
+    const showCardNumber = showCardNumbers.has(card.id);
 
     if (!isAuthenticated) {
       return (
@@ -156,7 +180,17 @@ export default function CardView({ onBack }: CardViewProps) {
       <div className="space-y-4">
         <div>
           <div className="text-sm text-cream/60 mb-1">Card Number</div>
-          <div className="font-medium font-mono">{card.cardNumber}</div>
+          <div className="flex items-center justify-between">
+            <div className="font-medium font-mono">
+              {showCardNumber ? card.cardNumber : maskCardNumber(card.cardNumber)}
+            </div>
+            <button
+              onClick={() => handleToggleCardNumber(card.id)}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-cream/70 hover:text-cream"
+            >
+              {showCardNumber ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
         <div className="flex justify-between">
           <div>
