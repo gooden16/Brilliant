@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Lock, Mail, Loader2 } from 'lucide-react';
+import { logger } from '../lib/logger';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -15,6 +16,12 @@ export default function Auth() {
     setError('');
     
     try {
+      logger.info('Attempting authentication', { 
+        isSignUp, 
+        email,
+        hasPassword: !!password 
+      });
+
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
@@ -24,14 +31,21 @@ export default function Auth() {
           }
         });
         if (error) throw error;
+        logger.info('Sign up successful', { email });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+        logger.info('Sign in successful', { email });
       }
     } catch (error: any) {
+      logger.error('Authentication failed', { 
+        isSignUp, 
+        email, 
+        error: error.message 
+      });
       setError(error.message);
     } finally {
       setLoading(false);

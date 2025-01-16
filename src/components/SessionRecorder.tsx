@@ -21,6 +21,7 @@ import {
   X
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { logger } from '../lib/logger';
 import type { UserItem, FeatureItem, MetricItem } from '../types';
 import { useSupabase } from '../contexts/SupabaseContext';
 import ClientOnboarding from './onboarding/ClientOnboarding';
@@ -65,6 +66,10 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
       recognition.onresult = (event: any) => {
         const last = event.results.length - 1;
         const transcript = event.results[last][0].transcript;
+        logger.info('Speech recognition result received', { 
+          isFinal: event.results[last].isFinal,
+          confidence: event.results[last][0].confidence 
+        });
         
         if (event.results[last].isFinal) {
           setTranscriptSegments(prev => [...prev, transcript]);
@@ -75,16 +80,20 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
       };
 
       recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        logger.error('Speech recognition error', { 
+          error: event.error,
+          message: event.message 
+        });
         setIsRecording(false);
       };
 
       recognition.onend = () => {
+        logger.info('Speech recognition ended', { wasRecording: isRecording });
         if (isRecording) {
           try {
             recognition.start();
           } catch (e) {
-            console.error('Failed to restart recognition:', e);
+            logger.error('Failed to restart recognition', { error: e });
             setIsRecording(false);
           }
         }
@@ -102,11 +111,13 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
 
   const toggleRecording = () => {
     if (!recognitionRef.current) {
+      logger.warn('Speech recognition not supported');
       alert('Speech recognition is not supported in this browser.');
       return;
     }
 
     try {
+      logger.info('Toggling recording state', { currentState: isRecording });
       if (isRecording) {
         recognitionRef.current.stop();
       } else {
@@ -114,7 +125,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
       }
       setIsRecording(!isRecording);
     } catch (e) {
-      console.error('Failed to toggle recording:', e);
+      logger.error('Failed to toggle recording', { error: e });
       setIsRecording(false);
     }
   };

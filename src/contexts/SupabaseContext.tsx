@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { logger } from '../lib/logger';
 
 interface SupabaseContextType {
   session: Session | null;
@@ -25,9 +26,10 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        logger.info('Auth session initialized', { userId: session?.user?.id });
         setSession(session);
       } catch (error) {
-        console.error('Error checking auth session:', error);
+        logger.error('Failed to check auth session', { error });
       } finally {
         setIsLoading(false);
       }
@@ -36,7 +38,8 @@ export function SupabaseProvider({ children }: SupabaseProviderProps) {
     initializeAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      logger.info('Auth state changed', { event, userId: session?.user?.id });
       setSession(session);
       setIsLoading(false);
     });

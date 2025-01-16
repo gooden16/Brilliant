@@ -3,6 +3,7 @@ import { DayPicker } from 'react-day-picker';
 import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { logger } from '../lib/logger';
 import { useSupabase } from '../contexts/SupabaseContext';
 import AppointmentConfirmation from './AppointmentConfirmation';
 import 'react-day-picker/dist/style.css';
@@ -24,6 +25,12 @@ export default function AppointmentScheduler({ onBack }: AppointmentSchedulerPro
     e.preventDefault();
     if (!selectedDate || !selectedTime || !session?.user) return;
 
+    logger.info('Attempting to schedule appointment', {
+      date: format(selectedDate, 'yyyy-MM-dd'),
+      time: selectedTime,
+      userId: session.user.id
+    });
+
     try {
       const { error } = await supabase
         .from('appointments')
@@ -37,12 +44,19 @@ export default function AppointmentScheduler({ onBack }: AppointmentSchedulerPro
           }
         ]);
 
-      if (error) throw error;
+      if (error) {
+        logger.error('Failed to schedule appointment', { error });
+        throw error;
+      }
+
+      logger.info('Appointment scheduled successfully', {
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        time: selectedTime
+      });
       
       setShowConfirmation(true);
     } catch (error) {
-      alert('Error scheduling appointment');
-      console.error(error);
+      alert('Failed to schedule appointment. Please try again.');
     }
   };
 

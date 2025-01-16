@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, LayoutDashboard, Plus, Mic, Bell, X, Calendar } from 'lucide-react';
+import { logger } from '../../lib/logger';
 import CanvasCard from './CanvasCard';
 import CanvasDetail from './CanvasDetail';
 import { supabase } from '../../lib/supabase';
@@ -23,8 +24,9 @@ export default function CanvasView({ setActiveTab }: CanvasViewProps) {
   useEffect(() => {
     const checkAppointments = async () => {
       if (!session?.user) return;
+      logger.info('Checking upcoming appointments', { userId: session.user.id });
       
-      const { data: appointments } = await supabase
+      const { data: appointments, error } = await supabase
         .from('appointments')
         .select('*')
         .eq('user_id', session.user.id)
@@ -33,6 +35,14 @@ export default function CanvasView({ setActiveTab }: CanvasViewProps) {
         .order('date', { ascending: true })
         .limit(1);
 
+      if (error) {
+        logger.error('Failed to fetch appointments', { error });
+        return;
+      }
+
+      logger.info('Appointments check complete', { 
+        hasUpcoming: appointments && appointments.length > 0 
+      });
       setHasScheduledMeeting(appointments && appointments.length > 0);
     };
 
