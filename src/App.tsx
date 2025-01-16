@@ -13,7 +13,11 @@ interface AppContentProps {
   isLoading: boolean;
 }
 
-function TopNav() {
+interface TopNavProps {
+  setActiveTab: (tab: 'onboarding' | 'dashboard') => void;
+}
+
+function TopNav({ setActiveTab }: TopNavProps) {
   const [showRobynMenu, setShowRobynMenu] = useState(false);
   const robynMenuRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +48,6 @@ function TopNav() {
                 <span className="text-cream">Brilliant</span>
                 <span className="text-dusty-pink">*</span>
               </div>
-              <span className="font-['Raleway'] text-[0.7rem] text-cream/80 uppercase tracking-wider">FINANCIAL</span>
             </div>
           </div>
 
@@ -154,8 +157,8 @@ function AppContent({ session, isLoading }: AppContentProps) {
   }
 
   return (
-    <div className="min-h-screen bg-navy text-cream">
-      <TopNav />
+    <div className="min-h-screen">
+      <TopNav setActiveTab={setActiveTab} />
       <div className="max-w-7xl mx-auto px-4 py-6">
         {activeTab === 'dashboard' && <CanvasView setActiveTab={setActiveTab} />}
         {activeTab === 'onboarding' && <ClientOnboarding />}

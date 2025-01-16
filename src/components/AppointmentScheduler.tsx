@@ -114,7 +114,7 @@ export default function AppointmentScheduler({ onBack }: AppointmentSchedulerPro
                 onClick={() => setSelectedTime(time)}
                 className={`p-4 rounded-xl text-left transition-colors ${
                   selectedTime === time
-                    ? 'bg-cream text-navy font-medium'
+                    ? 'bg-gold text-navy font-medium'
                     : 'bg-white/5 hover:bg-white/10'
                 }`}
               >
@@ -127,7 +127,7 @@ export default function AppointmentScheduler({ onBack }: AppointmentSchedulerPro
           <button
             type="submit"
             disabled={!selectedDate || !selectedTime}
-            className="w-full mt-8 bg-dusty-pink text-navy font-medium py-4 px-6 rounded-xl hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-8 bg-light-blue text-navy font-medium py-4 px-6 rounded-xl hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Confirm Appointment
           </button>

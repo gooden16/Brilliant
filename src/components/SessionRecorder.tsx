@@ -361,7 +361,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
             onClick={toggleRecording}
             className={`p-4 rounded-full transition-colors ${
               isRecording 
-                ? 'bg-burgundy text-white' 
+                ? 'bg-gold text-navy' 
                 : 'bg-white/10 hover:bg-white/20'
             }`}
           >
@@ -459,7 +459,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
 
         <button
           onClick={handleSave}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-dusty-pink text-navy font-medium py-4 px-12 rounded-xl hover:bg-opacity-90 transition-colors flex items-center gap-2"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-light-blue text-navy font-medium py-4 px-12 rounded-xl hover:bg-opacity-90 transition-colors flex items-center gap-2"
         >
           <Save className="w-5 h-5" />
           Confirm Canvas

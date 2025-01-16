@@ -186,81 +186,13 @@ export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Products Section */}
-        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-          <h3 className="font-playfair text-lg mb-6">Products</h3>
-          <div className="space-y-4 max-h-[400px] overflow-y-auto">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-white/10 rounded-lg">
-                    {product.type === 'checking' && <Building2 className="w-5 h-5 text-dusty-pink" />}
-                    {product.type === 'savings' && <PiggyBank className="w-5 h-5 text-dusty-pink" />}
-                    {product.type === 'cd' && <Banknote className="w-5 h-5 text-dusty-pink" />}
-                    {product.type === 'credit' && <Receipt className="w-5 h-5 text-dusty-pink" />}
-                    {product.type === 'debit' && <CardIcon className="w-5 h-5 text-dusty-pink" />}
-                  </div>
-                  <div>
-                    <div className="font-medium">{product.name}</div>
-                    <div className="text-sm text-cream/60">{product.type}</div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-cream/60">Balance</span>
-                  <span className={`font-medium ${product.balance < 0 ? 'text-red-500' : ''}`}>
-                    ${Math.abs(product.balance).toLocaleString()}
-                    {product.balance < 0 ? ' (Due)' : ''}
-                  </span>
-                </div>
-                {product.yield_rate && (
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="text-cream/60">Yield</span>
-                    <span className="font-medium">{product.yield_rate}%</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Actions Section */}
-        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-          <h3 className="font-playfair text-lg mb-6">Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => setCurrentView('money')}
-              className="bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors text-left group"
-            >
-              <div className="p-3 bg-white/10 rounded-lg w-fit mb-3 group-hover:bg-white/20 transition-colors">
-                <ArrowRightLeft className="w-5 h-5 text-dusty-pink" />
-              </div>
-              <div className="font-medium mb-1">Move Money</div>
-              <div className="text-sm text-cream/60">Transfer funds</div>
-            </button>
-
-            <button
-              onClick={() => setCurrentView('cards')}
-              className="bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors text-left group"
-            >
-              <div className="p-3 bg-white/10 rounded-lg w-fit mb-3 group-hover:bg-white/20 transition-colors">
-                <CardIcon className="w-5 h-5 text-dusty-pink" />
-              </div>
-              <div className="font-medium mb-1">Cards</div>
-              <div className="text-sm text-cream/60">Manage cards</div>
-            </button>
-          </div>
-        </div>
-
-        {/* Metrics Section */}
-        <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+      {/* Key Metrics Section */}
+      <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
           <h3 className="font-playfair text-lg mb-6">Key Metrics</h3>
-          {metrics.length > 0 && (
-            <div className="relative">
-              <div className="h-48 flex items-end">
+          <div className="grid grid-cols-4 gap-6">
+            <div className="col-span-3 relative">
+              {metrics.length > 0 && (
+                <div className="h-48 flex items-end">
                 {historicalNOI.map((point, i) => {
                   const targetNoi = 30;
                   const maxValue = 40; // Y-axis maximum fixed at 40%
@@ -296,18 +228,119 @@ export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
                   ))}
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-dusty-pink/40 rounded" />
-                  <span className="text-cream/60">Current NOI: {historicalNOI[historicalNOI.length - 1].value.toFixed(1)}%</span>
+            )}
+            </div>
+            
+            <div className="space-y-6">
+              {/* Cash In Section */}
+              <div className="bg-white/5 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-cream/60">Cash In</h4>
+                  <div className="p-2 bg-deep-olive/10 rounded-lg">
+                    <TrendingUp className="w-4 h-4 text-deep-olive" />
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-cream/5 rounded" />
-                  <span className="text-cream/60">Target NOI: 30.0%</span>
+                <div className="text-2xl font-medium">$8,500</div>
+                <div className="text-sm text-deep-olive flex items-center gap-1 mt-1">
+                  <TrendingUp className="w-3 h-3" />
+                  +12.5%
+                </div>
+              </div>
+              
+              {/* Cash Out Section */}
+              <div className="bg-white/5 rounded-xl p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-medium text-cream/60">Cash Out</h4>
+                  <div className="p-2 bg-burgundy/10 rounded-lg">
+                    <ArrowRightLeft className="w-4 h-4 text-burgundy" />
+                  </div>
+                </div>
+                <div className="text-2xl font-medium">$5,000</div>
+                <div className="text-sm text-burgundy flex items-center gap-1 mt-1">
+                  <TrendingUp className="w-3 h-3" />
+                  +8.2%
                 </div>
               </div>
             </div>
-          )}
+          </div>
+          
+          <div className="flex items-center justify-between mt-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-dusty-pink/40 rounded" />
+              <span className="text-cream/60">Current NOI: {historicalNOI[historicalNOI.length - 1].value.toFixed(1)}%</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-cream/5 rounded" />
+              <span className="text-cream/60">Target NOI: 30.0%</span>
+            </div>
+          </div>
+      </div>
+
+      {/* Quick Actions Section */}
+      <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+        <h3 className="font-playfair text-lg mb-6">Quick Actions</h3>
+        <div className="grid grid-cols-4 gap-4">
+          <button
+            onClick={() => setCurrentView('money')}
+            className="bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors text-left group"
+          >
+            <div className="p-3 bg-white/10 rounded-lg w-fit mb-3 group-hover:bg-white/20 transition-colors">
+              <ArrowRightLeft className="w-5 h-5 text-gold" />
+            </div>
+            <div className="font-medium mb-1">Move Money</div>
+            <div className="text-sm text-cream/60">Transfer funds</div>
+          </button>
+
+          <button
+            onClick={() => setCurrentView('cards')}
+            className="bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors text-left group"
+          >
+            <div className="p-3 bg-white/10 rounded-lg w-fit mb-3 group-hover:bg-white/20 transition-colors">
+              <CardIcon className="w-5 h-5 text-light-blue" />
+            </div>
+            <div className="font-medium mb-1">Cards</div>
+            <div className="text-sm text-cream/60">Manage cards</div>
+          </button>
+        </div>
+      </div>
+
+      {/* Products Section */}
+      <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+        <h3 className="font-playfair text-lg mb-6">Products</h3>
+        <div className="flex gap-4 overflow-x-auto pb-4">
+          {products.map((product) => (
+            <div
+              key={product.id}
+              className="flex-none w-80 bg-white/5 p-4 rounded-xl hover:bg-white/10 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2 bg-white/10 rounded-lg">
+                  {product.type === 'checking' && <Building2 className="w-5 h-5 text-gold" />}
+                  {product.type === 'savings' && <PiggyBank className="w-5 h-5 text-light-blue" />}
+                  {product.type === 'cd' && <Banknote className="w-5 h-5 text-gold" />}
+                  {product.type === 'credit' && <Receipt className="w-5 h-5 text-light-blue" />}
+                  {product.type === 'debit' && <CardIcon className="w-5 h-5 text-gold" />}
+                </div>
+                <div>
+                  <div className="font-medium">{product.name}</div>
+                  <div className="text-sm text-cream/60">{product.type}</div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-cream/60">Balance</span>
+                <span className={`font-medium ${product.balance < 0 ? 'text-red-500' : ''}`}>
+                  ${Math.abs(product.balance).toLocaleString()}
+                  {product.balance < 0 ? ' (Due)' : ''}
+                </span>
+              </div>
+              {product.yield_rate && (
+                <div className="flex items-center justify-between text-sm mt-1">
+                  <span className="text-cream/60">Yield</span>
+                  <span className="font-medium">{product.yield_rate}%</span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -327,14 +360,14 @@ export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
             >
               <div className="flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-lg ${
-                  transaction.type === 'income' ? 'bg-green-500/10' : 'bg-red-500/10'
+                  transaction.type === 'income' ? 'bg-deep-olive/10' : 'bg-burgundy/10'
                 } flex items-center justify-center`}>
                   {transaction.type === 'income' ? (
                     <TrendingUp className={`w-5 h-5 ${
-                      transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                      transaction.type === 'income' ? 'text-deep-olive' : 'text-burgundy'
                     }`} />
                   ) : (
-                    <ArrowRightLeft className="w-5 h-5 text-red-500" />
+                    <ArrowRightLeft className="w-5 h-5 text-burgundy" />
                   )}
                 </div>
                 <div>
@@ -345,7 +378,7 @@ export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
                 </div>
               </div>
               <div className={`font-medium ${
-                transaction.type === 'income' ? 'text-green-500' : 'text-red-500'
+                transaction.type === 'income' ? 'text-deep-olive' : 'text-burgundy'
               }`}>
                 {transaction.type === 'income' ? '+' : '-'}
                 ${Math.abs(transaction.amount).toLocaleString()}

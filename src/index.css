@@ -2,8 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+:root {
   @apply bg-navy text-cream;
+}
+
+body {
+  @apply min-h-screen;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

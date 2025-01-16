@@ -57,7 +57,7 @@ export default function StartMeeting() {
 
         <button
           onClick={() => setHasStarted(true)}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-dusty-pink text-navy font-medium py-4 px-12 rounded-xl hover:bg-opacity-90 transition-colors flex items-center gap-2"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gold text-navy font-medium py-4 px-12 rounded-xl hover:bg-opacity-90 transition-colors flex items-center gap-2"
         >
           <Mic className="w-5 h-5" />
           Start Recording

@@ -295,7 +295,7 @@ export default function PayeeForm({ onBack, onSubmit }: PayeeFormProps) {
 
         <button
           type="submit"
-          className="w-full bg-dusty-pink text-navy font-medium py-4 px-6 rounded-xl hover:bg-opacity-90 transition-colors"
+          className="w-full bg-gold text-navy font-medium py-4 px-6 rounded-xl hover:bg-opacity-90 transition-colors"
         >
           Add Payee
         </button>

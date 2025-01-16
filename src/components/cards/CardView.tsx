@@ -236,7 +236,7 @@ export default function CardView({ onBack }: CardViewProps) {
 
         <button
           onClick={() => setShowCreateVirtual(true)}
-          className="px-4 py-2 bg-dusty-pink text-navy rounded-lg hover:bg-opacity-90 transition-colors font-medium flex items-center gap-2"
+          className="px-4 py-2 bg-light-blue text-navy rounded-lg hover:bg-opacity-90 transition-colors font-medium flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
           Create Virtual Card

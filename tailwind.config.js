@@ -7,17 +7,24 @@ export default {
   theme: {
     extend: {
       colors: {
-        'navy': '#0A1A2F',
-        'cream': '#F5F5F4',
-        'dusty-pink': '#E4A6A6',
-        'burgundy': '#800020'
+        'navy': '#00112E',
+        'cream': '#F5F2E7',
+        'dusty-pink': '#F4C6D7',
+        'burgundy': '#A83440',
+        'deep-olive': '#4C6652',
+        'gold': '#D4AF37',
+        'light-blue': '#ADD8E6',
+        'bronzed-orange': '#C27830',
+        'medium-grey': '#999999',
+        'charcoal-grey': '#333333',
+        'light-grey': '#E5E5E5'
       },
       fontFamily: {
         'playfair': ['Playfair Display', 'serif'],
         'montserrat': ['Montserrat', 'sans-serif']
       },
       backgroundColor: {
-        'navy': '#0A1A2F',
+        'navy': '#00112E',
         'navy-50': 'rgba(10, 26, 47, 0.5)',
         'white-5': 'rgba(255, 255, 255, 0.05)',
         'white-10': 'rgba(255, 255, 255, 0.1)',

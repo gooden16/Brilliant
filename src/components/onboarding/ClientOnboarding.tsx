@@ -29,7 +29,7 @@ export default function ClientOnboarding() {
         id: 'account-type',
         title: 'Account Type',
         description: 'Select the type of account you want to open',
-        icon: <Building2 className="w-6 h-6" />,
+        icon: <Building2 className="w-6 h-6 text-gold" />,
       }
     ];
 
@@ -38,7 +38,7 @@ export default function ClientOnboarding() {
         id: 'trust-docs',
         title: 'Trust Documents',
         description: 'Upload trust documentation',
-        icon: <FileCheck className="w-6 h-6" />,
+        icon: <FileCheck className="w-6 h-6 text-light-blue" />,
       });
     }
 
@@ -47,14 +47,14 @@ export default function ClientOnboarding() {
         id: 'multi-kyc',
         title: 'Identity Verification',
         description: 'Complete verification for all parties',
-        icon: <User className="w-6 h-6" />,
+        icon: <User className="w-6 h-6 text-dusty-pink" />,
       });
     } else if (onboardingData.accountType === 'individual') {
       baseSteps.push({
         id: 'individual-kyc',
         title: 'Identity Verification',
         description: 'Complete identity verification',
-        icon: <User className="w-6 h-6" />,
+        icon: <User className="w-6 h-6 text-dusty-pink" />,
       });
     }
 
@@ -62,7 +62,7 @@ export default function ClientOnboarding() {
       id: 'terms',
       title: 'Terms & Conditions',
       description: 'Review and accept terms',
-      icon: <ShieldCheck className="w-6 h-6" />,
+      icon: <ShieldCheck className="w-6 h-6 text-deep-olive" />,
     });
 
     return baseSteps;
@@ -142,9 +142,21 @@ export default function ClientOnboarding() {
                   index === currentStep ? 'text-cream' : 'text-cream/40'
                 }`}>
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                    index === currentStep ? 'bg-dusty-pink text-navy' : 'bg-white/5'
+                    index === currentStep 
+                      ? step.id === 'account-type'
+                        ? 'bg-gold text-navy'
+                        : step.id === 'trust-docs'
+                        ? 'bg-light-blue text-navy'
+                        : step.id === 'multi-kyc' || step.id === 'individual-kyc'
+                        ? 'bg-dusty-pink text-navy'
+                        : 'bg-deep-olive text-navy'
+                      : 'bg-white/5'
                   }`}>
-                    {step.icon}
+                    <div className={`${
+                      !index === currentStep && 'text-cream/40'
+                    }`}>
+                      {step.icon}
+                    </div>
                   </div>
                   <div className="text-sm font-medium">{step.title}</div>
                   <div className="text-xs mt-1 max-w-[120px] text-center">
