@@ -3,11 +3,9 @@
 @tailwind utilities;
 
 :root {
-  @apply bg-navy text-cream;
-}
-
-body {
-  @apply min-h-screen;
+  color-scheme: dark;
+  background-color: #00112E;
+  color: #F5F2E7;
 }
 
 /* Hide scrollbar for Chrome, Safari and Opera */

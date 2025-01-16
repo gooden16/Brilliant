@@ -82,8 +82,8 @@ export default function AppointmentScheduler({ onBack }: AppointmentSchedulerPro
             classNames={{
               head_cell: "text-cream/60 font-normal text-sm",
               cell: "text-center p-0",
-              day: "h-10 w-10 text-sm rounded-lg hover:bg-white/10 transition-colors",
-              selected: "bg-cream !text-navy font-medium",
+              day: "inline-flex h-10 w-10 text-sm items-center justify-center rounded-lg hover:bg-white/10 transition-colors focus:outline-none",
+              selected: "bg-dusty-pink text-navy hover:bg-dusty-pink/90",
               today: "text-dusty-pink font-medium",
               nav: "space-x-1 flex items-center",
               nav_button: "p-1 hover:bg-white/10 rounded-lg transition-colors",

@@ -80,7 +80,7 @@ function TopNav({ setActiveTab }: TopNavProps) {
             </button>
 
             {showRobynMenu && (
-              <div className="absolute right-0 top-full mt-2 bg-navy/95 border border-white/10 rounded-xl backdrop-blur-sm overflow-hidden w-64 z-50">
+              <div className="fixed right-4 top-[4.5rem] mt-2 bg-[#00112E] border border-white/10 rounded-xl backdrop-blur-md overflow-hidden w-64 z-[9999] shadow-xl">
                 <div className="p-4 border-b border-white/10">
                   <div className="flex items-center gap-3">
                     <img 
@@ -94,7 +94,7 @@ function TopNav({ setActiveTab }: TopNavProps) {
                     </div>
                   </div>
                 </div>
-                <div className="p-2">
+                <div className="p-2 bg-[#00112E]">
                   <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors rounded-lg">
                     <Calendar className="w-4 h-4 text-dusty-pink" />
                     <span>Setup Appointment</span>
@@ -153,13 +153,17 @@ function AppContent({ session, isLoading }: AppContentProps) {
   }
 
   if (!session) {
-    return <Auth />;
+    return (
+      <div className="min-h-screen bg-[#00112E]">
+        <Auth />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#00112E]">
       <TopNav setActiveTab={setActiveTab} />
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6 min-h-[calc(100vh-80px)]">
         {activeTab === 'dashboard' && <CanvasView setActiveTab={setActiveTab} />}
         {activeTab === 'onboarding' && <ClientOnboarding />}
       </div>
