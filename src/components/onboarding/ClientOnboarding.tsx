@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Building2, Users, User, ArrowRight, FileCheck, ShieldCheck } from 'lucide-react';
+import { logger } from '../../lib/logger';
 import AccountTypeSelection from './steps/AccountTypeSelection';
 import TrustDocuments from './steps/TrustDocuments';
 import IndividualKYC from './steps/IndividualKYC';
@@ -69,11 +70,17 @@ export default function ClientOnboarding() {
   };
 
   const handleAccountTypeSelect = (type: 'individual' | 'joint' | 'trust') => {
+    logger.info('Account type selected', { type });
     setOnboardingData(prev => ({ ...prev, accountType: type }));
     setCurrentStep(type === 'trust' ? 1 : 2);
   };
 
   const handleTrustDocumentsUpload = (documents: string[], trustees: Partial<Individual>[]) => {
+    logger.info('Trust documents uploaded', { 
+      documentCount: documents.length,
+      trusteeCount: trustees.length 
+    });
+
     setOnboardingData(prev => ({ 
       ...prev, 
       trustDocuments: documents,
@@ -92,6 +99,12 @@ export default function ClientOnboarding() {
   };
 
   const handleIndividualKYC = (individual: Individual) => {
+    logger.info('Processing individual KYC', {
+      individualId: individual.id,
+      currentIndex: currentIndividualIndex,
+      totalCount: onboardingData.individuals?.length
+    });
+
     setOnboardingData(prev => {
       const updatedIndividuals = [...(prev.individuals || [])];
       updatedIndividuals[currentIndividualIndex] = {
@@ -112,8 +125,16 @@ export default function ClientOnboarding() {
   };
 
   const handleTermsAccept = (accepted: boolean) => {
+    logger.info('Terms and conditions response', { accepted });
     setOnboardingData(prev => ({ ...prev, termsAccepted: accepted }));
     // Here you would typically submit the completed onboarding data
+    try {
+      // Submit onboarding data to backend
+      logger.info('Onboarding completed successfully');
+    } catch (error) {
+      logger.error('Failed to complete onboarding', { error });
+      alert('Failed to complete onboarding. Please try again.');
+    }
   };
 
   const getCurrentIndividual = () => {

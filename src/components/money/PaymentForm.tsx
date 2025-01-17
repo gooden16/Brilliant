@@ -215,7 +215,7 @@ export default function PaymentForm({ payee, onBack }: PaymentFormProps) {
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-playfair">Make Payment</h2>
+        <h2 className="text-2xl font-playfair">Move Money</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
@@ -361,7 +361,7 @@ export default function PaymentForm({ payee, onBack }: PaymentFormProps) {
           disabled={!amount || !selectedDate}
           className="w-full bg-dusty-pink text-navy font-medium py-4 px-6 rounded-xl hover:bg-opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Schedule Payment
+          Schedule Money Movement
         </button>
       </form>
     </div>

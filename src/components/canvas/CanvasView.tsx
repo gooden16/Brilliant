@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, LayoutDashboard, Plus, Mic, Bell, X, Calendar } from 'lucide-react';
 import { logger } from '../../lib/logger';
 import CanvasCard from './CanvasCard';
+import AppointmentScheduler from '../AppointmentScheduler';
 import CanvasDetail from './CanvasDetail';
 import { supabase } from '../../lib/supabase';
-import AppointmentScheduler from '../AppointmentScheduler';
 import SessionRecorder from '../SessionRecorder';
 import { useSupabase } from '../../contexts/SupabaseContext';
 import type { Canvas } from '../../types';
@@ -102,7 +102,7 @@ export default function CanvasView({ setActiveTab }: CanvasViewProps) {
   if (showScheduler) {
     return <AppointmentScheduler onBack={() => setShowScheduler(false)} />;
   }
-
+  
   if (showSession) {
     return <SessionRecorder onBack={() => setShowSession(false)} />;
   }

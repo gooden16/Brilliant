@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, DragEvent } from 'react';
 import {
   Save,
   ArrowLeft,
-  Pencil,
-  Trash2,
+  CreditCard,
+  Smartphone,
+  Shield,
   Users,
   UserCircle,
   Building2,
@@ -17,8 +18,9 @@ import {
   Mic,
   MicOff,
   Plus,
-  Check,
-  X
+  GripHorizontal,
+  X,
+  Trash2
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { logger } from '../lib/logger';
@@ -30,12 +32,13 @@ interface SessionRecorderProps {
   onBack?: () => void;
 }
 
-interface EditingState {
-  id: string | null;
-  type: 'metric' | 'feature' | 'user' | null;
+interface BlockTemplate {
+  id: string;
+  type: 'metric' | 'feature' | 'user';
   name: string;
   icon?: string;
   graphType?: 'bar' | 'line' | 'pie';
+  description: string;
 }
 
 export default function SessionRecorder({ onBack }: SessionRecorderProps) {
@@ -44,17 +47,139 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const [metrics, setMetrics] = useState<MetricItem[]>([]);
-  const [features, setFeatures] = useState<FeatureItem[]>([]);
-  const [users, setUsers] = useState<UserItem[]>([]);
   const [transcriptSegments, setTranscriptSegments] = useState<string[]>([]);
-  const [editing, setEditing] = useState<EditingState>({
-    id: null,
-    type: null,
-    name: '',
-    icon: undefined,
-    graphType: undefined
-  });
+  const [selectedBlocks, setSelectedBlocks] = useState<BlockTemplate[]>([]);
+  const [draggedBlock, setDraggedBlock] = useState<BlockTemplate | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  const blockTemplates: BlockTemplate[] = [
+    {
+      id: 'balance',
+      type: 'metric',
+      name: 'Balance',
+      graphType: 'line',
+      description: 'Track account balance over time'
+    },
+    {
+      id: 'return-rate',
+      type: 'metric',
+      name: 'Rate of Return',
+      graphType: 'line',
+      description: 'Monitor investment performance'
+    },
+    {
+      id: 'operating-account',
+      type: 'feature',
+      name: 'Operating Account',
+      icon: 'building',
+      description: 'Primary business account'
+    },
+    {
+      id: 'reserve-account',
+      type: 'feature',
+      name: 'Reserve Account',
+      icon: 'wallet',
+      description: 'Savings and emergency funds'
+    },
+    {
+      id: 'ach-payments',
+      type: 'feature',
+      name: 'Payments - ACH',
+      icon: 'wallet',
+      description: 'Bank transfer payments'
+    },
+    {
+      id: 'wire-payments',
+      type: 'feature',
+      name: 'Payments - Wire',
+      icon: 'wallet',
+      description: 'Wire transfer payments'
+    },
+    {
+      id: 'check-payments',
+      type: 'feature',
+      name: 'Payments - Checks',
+      icon: 'wallet',
+      description: 'Check payment processing'
+    },
+    {
+      id: 'physical-card',
+      type: 'feature',
+      name: 'Physical Payment Card',
+      icon: 'credit-card',
+      description: 'Physical debit/credit card'
+    },
+    {
+      id: 'virtual-card',
+      type: 'feature',
+      name: 'Virtual Payment Card',
+      icon: 'smartphone',
+      description: 'Virtual card for online payments'
+    },
+    {
+      id: 'credit-line',
+      type: 'feature',
+      name: 'Credit Line with Float',
+      icon: 'trending-up',
+      description: 'Flexible credit line facility'
+    },
+    {
+      id: 'secured-loan',
+      type: 'feature',
+      name: 'Secured Loan',
+      icon: 'shield',
+      description: 'Asset-backed lending'
+    },
+    {
+      id: 'accept-payments',
+      type: 'feature',
+      name: 'Accept Payments',
+      icon: 'wallet',
+      description: 'Receive customer payments'
+    },
+    {
+      id: 'vendor-portal',
+      type: 'feature',
+      name: 'Vendor Portal',
+      icon: 'building-2',
+      description: 'Manage vendor relationships'
+    },
+    {
+      id: 'client-portal',
+      type: 'feature',
+      name: 'Client Portal',
+      icon: 'users',
+      description: 'Client self-service portal'
+    },
+    {
+      id: 'spouse',
+      type: 'user',
+      name: 'Spouse',
+      icon: 'user-circle',
+      description: 'Spouse access and permissions'
+    },
+    {
+      id: 'child',
+      type: 'user',
+      name: 'Child',
+      icon: 'user-circle',
+      description: 'Child access and permissions'
+    },
+    {
+      id: 'operator',
+      type: 'user',
+      name: 'Operator',
+      icon: 'user-circle',
+      description: 'Day-to-day operations access'
+    },
+    {
+      id: 'manager',
+      type: 'user',
+      name: 'Manager',
+      icon: 'user-circle',
+      description: 'Management level access'
+    }
+  ];
 
   useEffect(() => {
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
@@ -109,6 +234,49 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
     };
   }, [isRecording]);
 
+  const handleDragStart = (e: DragEvent<HTMLDivElement>, block: BlockTemplate) => {
+    setDraggedBlock(block);
+    e.dataTransfer.setData('text/plain', block.id);
+    e.dataTransfer.effectAllowed = 'copy';
+
+    // Create a drag image
+    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+    dragImage.style.position = 'absolute';
+    dragImage.style.top = '-1000px';
+    document.body.appendChild(dragImage);
+    e.dataTransfer.setDragImage(dragImage, 20, 20);
+
+    // Remove the drag image after it's no longer needed
+    setTimeout(() => {
+      document.body.removeChild(dragImage);
+    }, 0);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsDraggingOver(true);
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDraggingOver(false);
+    if (draggedBlock && !selectedBlocks.find(b => b.id === draggedBlock.id)) {
+      setSelectedBlocks(prev => [...prev, draggedBlock]);
+    }
+    setDraggedBlock(null);
+  };
+
+  const handleRemoveBlock = (blockId: string) => {
+    setSelectedBlocks(prev => prev.filter(b => b.id !== blockId));
+  };
+
   const toggleRecording = () => {
     if (!recognitionRef.current) {
       logger.warn('Speech recognition not supported');
@@ -130,191 +298,6 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
     }
   };
 
-  const handleDelete = (id: string, type: 'metric' | 'feature' | 'user') => {
-    switch (type) {
-      case 'metric':
-        setMetrics(prev => prev.filter(metric => metric.id !== id));
-        break;
-      case 'feature':
-        setFeatures(prev => prev.filter(feature => feature.id !== id));
-        break;
-      case 'user':
-        setUsers(prev => prev.filter(user => user.id !== id));
-        break;
-    }
-  };
-
-  const handleAdd = (type: 'metric' | 'feature' | 'user') => {
-    const id = self.crypto.randomUUID();
-    switch (type) {
-      case 'metric':
-        setMetrics(prev => [...prev, { id, name: 'New Metric', graphType: 'line' }]);
-        setEditing({ id, type, name: 'New Metric', graphType: 'line' });
-        break;
-      case 'feature':
-        setFeatures(prev => [...prev, { id, name: 'New Feature', icon: 'settings' }]);
-        setEditing({ id, type, name: 'New Feature', icon: 'settings' });
-        break;
-      case 'user':
-        setUsers(prev => [...prev, { id, name: 'New User Type', icon: 'user-circle' }]);
-        setEditing({ id, type, name: 'New User Type', icon: 'user-circle' });
-        break;
-    }
-  };
-
-  const handleEdit = (item: MetricItem | FeatureItem | UserItem, type: 'metric' | 'feature' | 'user') => {
-    setEditing({
-      id: item.id,
-      type,
-      name: item.name,
-      icon: 'icon' in item ? item.icon : undefined,
-      graphType: 'graphType' in item ? item.graphType : undefined
-    });
-  };
-
-  const handleSaveEdit = () => {
-    if (!editing.id || !editing.type) return;
-
-    switch (editing.type) {
-      case 'metric':
-        setMetrics(prev => prev.map(metric => 
-          metric.id === editing.id 
-            ? { ...metric, name: editing.name, graphType: editing.graphType as 'bar' | 'line' | 'pie' }
-            : metric
-        ));
-        break;
-      case 'feature':
-        setFeatures(prev => prev.map(feature =>
-          feature.id === editing.id
-            ? { ...feature, name: editing.name, icon: editing.icon as string }
-            : feature
-        ));
-        break;
-      case 'user':
-        setUsers(prev => prev.map(user =>
-          user.id === editing.id
-            ? { ...user, name: editing.name, icon: editing.icon as string }
-            : user
-        ));
-        break;
-    }
-
-    setEditing({ id: null, type: null, name: '', icon: undefined, graphType: undefined });
-  };
-
-  const handleCancelEdit = () => {
-    setEditing({ id: null, type: null, name: '', icon: undefined, graphType: undefined });
-  };
-
-  const getIconComponent = (iconName: string) => {
-    const icons: { [key: string]: React.ReactNode } = {
-      'user-circle': <UserCircle className="w-5 h-5" />,
-      'building-2': <Building2 className="w-5 h-5" />,
-      'users': <Users className="w-5 h-5" />,
-      'wallet': <Wallet className="w-5 h-5" />,
-      'activity': <Activity className="w-5 h-5" />,
-      'trending-up': <TrendingUp className="w-5 h-5" />
-    };
-    return icons[iconName] || <Settings className="w-5 h-5" />;
-  };
-
-  const getGraphIcon = (type: 'bar' | 'line' | 'pie') => {
-    const icons = {
-      'bar': <BarChart3 className="w-5 h-5" />,
-      'line': <LineChart className="w-5 h-5" />,
-      'pie': <PieChart className="w-5 h-5" />
-    };
-    return icons[type];
-  };
-
-  const renderEditableItem = (
-    item: MetricItem | FeatureItem | UserItem,
-    type: 'metric' | 'feature' | 'user'
-  ) => {
-    const isEditing = editing.id === item.id;
-
-    if (isEditing) {
-      return (
-        <div className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-center justify-between">
-          <div className="flex items-center gap-3 flex-grow">
-            {type === 'metric' ? (
-              <select
-                value={editing.graphType}
-                onChange={(e) => setEditing(prev => ({ ...prev, graphType: e.target.value as 'bar' | 'line' | 'pie' }))}
-                className="bg-white/10 text-cream border-none rounded p-1"
-              >
-                <option value="line">Line Chart</option>
-                <option value="bar">Bar Chart</option>
-                <option value="pie">Pie Chart</option>
-              </select>
-            ) : (
-              <select
-                value={editing.icon}
-                onChange={(e) => setEditing(prev => ({ ...prev, icon: e.target.value }))}
-                className="bg-white/10 text-cream border-none rounded p-1"
-              >
-                <option value="user-circle">User</option>
-                <option value="users">Users</option>
-                <option value="building-2">Building</option>
-                <option value="wallet">Wallet</option>
-                <option value="activity">Activity</option>
-                <option value="trending-up">Trending</option>
-                <option value="settings">Settings</option>
-              </select>
-            )}
-            <input
-              type="text"
-              value={editing.name}
-              onChange={(e) => setEditing(prev => ({ ...prev, name: e.target.value }))}
-              className="bg-white/10 text-cream border-none rounded px-2 py-1 flex-grow"
-              autoFocus
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSaveEdit}
-              className="p-1 hover:bg-white/10 rounded-full transition-colors text-cream/60 hover:text-cream"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              onClick={handleCancelEdit}
-              className="p-1 hover:bg-white/10 rounded-full transition-colors text-cream/60 hover:text-cream"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="bg-white/5 p-4 rounded-xl border border-white/5 flex items-center justify-between group">
-        <div className="flex items-center gap-3">
-          {type === 'metric' 
-            ? getGraphIcon((item as MetricItem).graphType)
-            : getIconComponent((item as FeatureItem | UserItem).icon)
-          }
-          <p className="text-sm">{item.name}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleEdit(item, type)}
-            className="p-1 hover:bg-white/10 rounded-full transition-colors text-cream/60 hover:text-cream"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleDelete(item.id, type)}
-            className="p-1 hover:bg-white/10 rounded-full transition-colors text-cream/60 hover:text-cream"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   const handleSave = async () => {
     if (!session?.user) {
       alert('You must be logged in to save a canvas');
@@ -327,19 +310,17 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
     try {
       const { error } = await supabase
         .from('canvases')
-        .insert([
-          {
-            id: canvasId,
-            name: canvasName,
-            type: 'property',
-            key_metrics: metrics.map(m => m.name),
-            features: features.map(f => f.name),
-            users: users.map(u => u.name),
-            transcription: transcriptSegments.join('\n'),
-            status: 'draft',
-            user_id: session.user.id
-          }
-        ]);
+        .insert([{
+          id: canvasId,
+          name: canvasName,
+          type: 'property',
+          key_metrics: selectedBlocks.filter(b => b.type === 'metric').map(m => m.name),
+          features: selectedBlocks.filter(b => b.type === 'feature').map(f => f.name),
+          users: selectedBlocks.filter(b => b.type === 'user').map(u => u.name),
+          transcription: transcriptSegments.join('\n'),
+          status: 'draft',
+          user_id: session.user.id
+        }]);
 
       if (error) throw error;
       setShowOnboarding(true);
@@ -352,6 +333,40 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
   if (showOnboarding) {
     return <ClientOnboarding />;
   }
+
+  const BlockList = ({ type, title }: { type: 'metric' | 'feature' | 'user', title: string }) => (
+    <div>
+      <h4 className="font-montserrat font-medium mb-3">{title}</h4>
+      <div className="space-y-2">
+        {blockTemplates.filter(block => block.type === type).map(block => (
+          <div
+            key={block.id}
+            draggable
+            onDragStart={(e) => handleDragStart(e, block)}
+            className="bg-white/5 p-3 rounded-lg border border-white/5 flex items-center gap-2 cursor-move hover:bg-white/10 transition-colors group relative"
+          >
+            <GripHorizontal className="w-3 h-3 text-cream/40 group-hover:text-cream/60" />
+            {block.type === 'metric' ? (
+              block.graphType === 'line' ? <LineChart className="w-4 h-4 text-dusty-pink" /> :
+              block.graphType === 'bar' ? <BarChart3 className="w-4 h-4 text-dusty-pink" /> :
+              <PieChart className="w-4 h-4 text-dusty-pink" />
+            ) : (
+              block.icon === 'settings' ? <Settings className="w-4 h-4 text-dusty-pink" /> :
+              block.icon === 'users' ? <Users className="w-4 h-4 text-dusty-pink" /> :
+              block.icon === 'wallet' ? <Wallet className="w-4 h-4 text-dusty-pink" /> :
+              block.icon === 'building-2' ? <Building2 className="w-4 h-4 text-dusty-pink" /> :
+              block.icon === 'user-circle' ? <UserCircle className="w-4 h-4 text-dusty-pink" /> :
+              <Activity className="w-4 h-4 text-dusty-pink" />
+            )}
+            <div>
+              <p className="text-sm">{block.name}</p>
+              <p className="text-xs text-cream/60">{block.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-navy text-cream">
@@ -388,82 +403,106 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
                 <h3 className="text-xl font-playfair">Financial Advisory Canvas</h3>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-montserrat font-medium">Key Metrics</h4>
-                    <button 
-                      onClick={() => handleAdd('metric')}
-                      className="p-1 hover:bg-white/10 rounded-full transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`min-h-[400px] border-2 border-dashed rounded-xl p-4 ${
+                  selectedBlocks.length === 0 
+                    ? isDraggingOver 
+                      ? 'border-dusty-pink border-white/40 bg-white/5'
+                      : 'border-white/20'
+                    : isDraggingOver
+                      ? 'border-dusty-pink border-white/40 bg-white/5'
+                      : 'border-white/10'
+                }`}
+              >
+                {selectedBlocks.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-cream/40 gap-4">
+                    <Plus className="w-8 h-8" />
+                    <p>Drag blocks here to build your canvas</p>
                   </div>
-                  <div className="space-y-2">
-                    {metrics.map((metric) => renderEditableItem(metric, 'metric'))}
+                ) : (
+                  <div className="space-y-4">
+                    {selectedBlocks.map((block) => (
+                      <div
+                        key={block.id}
+                        className="bg-white/10 p-4 rounded-xl flex items-center justify-between group animate-fadeIn"
+                      >
+                        <div className="flex items-center gap-3">
+                          {block.type === 'metric' ? (
+                            block.graphType === 'line' ? <LineChart className="w-4 h-4 text-dusty-pink" /> :
+                            block.graphType === 'bar' ? <BarChart3 className="w-4 h-4 text-dusty-pink" /> :
+                            <PieChart className="w-4 h-4 text-dusty-pink" />
+                          ) : (
+                            block.icon === 'settings' ? <Settings className="w-4 h-4 text-dusty-pink" /> :
+                            block.icon === 'users' ? <Users className="w-4 h-4 text-dusty-pink" /> :
+                            block.icon === 'wallet' ? <Wallet className="w-4 h-4 text-dusty-pink" /> :
+                            block.icon === 'building-2' ? <Building2 className="w-4 h-4 text-dusty-pink" /> :
+                            block.icon === 'user-circle' ? <UserCircle className="w-4 h-4 text-dusty-pink" /> :
+                            block.icon === 'credit-card' ? <CreditCard className="w-4 h-4 text-dusty-pink" /> :
+                            block.icon === 'smartphone' ? <Smartphone className="w-4 h-4 text-dusty-pink" /> :
+                            block.icon === 'shield' ? <Shield className="w-4 h-4 text-dusty-pink" /> :
+                            <Activity className="w-4 h-4 text-dusty-pink" />
+                          )}
+                          <div>
+                            <p className="text-sm">{block.name}</p>
+                            <p className="text-xs text-cream/60">{block.description}</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveBlock(block.id)}
+                          className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded-lg transition-all"
+                        >
+                          <Trash2 className="w-3 h-3 text-burgundy" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-montserrat font-medium">Features</h4>
-                    <button 
-                      onClick={() => handleAdd('feature')}
-                      className="p-1 hover:bg-white/10 rounded-full transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {features.map((feature) => renderEditableItem(feature, 'feature'))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-montserrat font-medium">Users</h4>
-                    <button 
-                      onClick={() => handleAdd('user')}
-                      className="p-1 hover:bg-white/10 rounded-full transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {users.map((user) => renderEditableItem(user, 'user'))}
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Live Transcript Section */}
-          <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-            <h3 className="text-xl font-playfair mb-6">Live Transcript</h3>
-            <div className="space-y-4 max-h-[600px] overflow-y-auto">
-              {transcriptSegments.map((text, index) => (
-                <div
-                  key={index}
-                  className={`flex ${index % 2 === 0 ? 'justify-end' : 'justify-start'}`}
-                >
+          {/* Available Blocks Section */}
+          <div className="space-y-6">
+            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+              <h3 className="text-xl font-playfair mb-6">Available Blocks</h3>
+              <div className="space-y-6">
+                <BlockList type="metric" title="Key Metrics" />
+                <BlockList type="feature" title="Features" />
+                <BlockList type="user" title="Users" />
+              </div>
+            </div>
+
+            {/* Live Transcript Section */}
+            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+              <h3 className="text-xl font-playfair mb-6">Live Transcript</h3>
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                {transcriptSegments.map((text, index) => (
                   <div
-                    className={`max-w-[80%] p-4 rounded-xl ${
-                      index % 2 === 0
-                        ? 'bg-dusty-pink text-navy ml-auto'
-                        : 'bg-white/5 text-cream mr-auto border border-white/5'
-                    }`}
+                    key={index}
+                    className={`flex ${index % 2 === 0 ? 'justify-end' : 'justify-start'}`}
                   >
-                    <p className="text-sm">{text}</p>
+                    <div
+                      className={`max-w-[80%] p-4 rounded-xl ${
+                        index % 2 === 0
+                          ? 'bg-dusty-pink text-navy ml-auto'
+                          : 'bg-white/5 text-cream mr-auto border border-white/5'
+                      }`}
+                    >
+                      <p className="text-sm">{text}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {currentTranscript && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] p-4 rounded-xl bg-white/5 text-cream/50 mr-auto border border-white/5">
-                    <p className="text-sm">{currentTranscript}</p>
+                ))}
+                {currentTranscript && (
+                  <div className="flex justify-start">
+                    <div className="max-w-[80%] p-4 rounded-xl bg-white/5 text-cream/50 mr-auto border border-white/5">
+                      <p className="text-sm">{currentTranscript}</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

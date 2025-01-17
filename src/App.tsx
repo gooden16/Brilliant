@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { SupabaseProvider } from './contexts/SupabaseContext';
 import Auth from './components/Auth';
+import AppointmentScheduler from './components/AppointmentScheduler';
 import CanvasView from './components/canvas/CanvasView';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { Session } from '@supabase/supabase-js';
 import { Bell, Settings, LogOut, LayoutDashboard, Phone, ChevronDown, Calendar, MessageSquare } from 'lucide-react';
 import { supabase } from './lib/supabase';
+import { logger } from './lib/logger';
+import BackgroundPattern from './components/BackgroundPattern';
 import ClientOnboarding from './components/onboarding/ClientOnboarding';
 
 interface AppContentProps {
@@ -15,14 +18,22 @@ interface AppContentProps {
 
 interface TopNavProps {
   setActiveTab: (tab: 'onboarding' | 'dashboard') => void;
+  setShowScheduler: (show: boolean) => void;
 }
 
-function TopNav({ setActiveTab }: TopNavProps) {
+function TopNav({ setActiveTab, setShowScheduler }: TopNavProps) {
   const [showRobynMenu, setShowRobynMenu] = useState(false);
   const robynMenuRef = useRef<HTMLDivElement>(null);
 
   const handleSignOut = async () => {
+    logger.info('User signing out');
     await supabase.auth.signOut();
+  };
+
+  const handleLogoClick = () => {
+    logger.info('Logo clicked, navigating to dashboard');
+    setActiveTab('dashboard');
+    setShowScheduler(false);
   };
 
   useEffect(() => {
@@ -43,18 +54,21 @@ function TopNav({ setActiveTab }: TopNavProps) {
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
         <div className="flex items-center gap-8">
           <div className="flex items-center gap-2">
-            <div className="flex flex-col items-center">
+            <button 
+              onClick={handleLogoClick}
+              className="flex flex-col items-center hover:opacity-80 transition-opacity cursor-pointer"
+            >
               <div className="font-['Raleway'] text-xl">
                 <span className="text-cream">Brilliant</span>
                 <span className="text-dusty-pink">*</span>
               </div>
-            </div>
+            </button>
           </div>
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setActiveTab('dashboard')}
-              className="px-4 py-2 bg-white/5 text-cream rounded-lg hover:bg-white/10 transition-colors flex items-center gap-2"
+              onClick={handleLogoClick}
+              className="px-4 py-2 bg-white/5 text-cream rounded-lg hover:bg-white/10 transition-colors flex items-center gap-2 cursor-pointer"
             >
               <LayoutDashboard className="w-4 h-4" />
               Dashboard
@@ -95,7 +109,13 @@ function TopNav({ setActiveTab }: TopNavProps) {
                   </div>
                 </div>
                 <div className="p-2 bg-[#00112E]">
-                  <button className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors rounded-lg">
+                  <button 
+                    onClick={() => {
+                      setShowRobynMenu(false);
+                      setShowScheduler(true);
+                    }}
+                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-white/10 transition-colors rounded-lg"
+                  >
                     <Calendar className="w-4 h-4 text-dusty-pink" />
                     <span>Setup Appointment</span>
                   </button>
@@ -122,7 +142,7 @@ function TopNav({ setActiveTab }: TopNavProps) {
             <div className="relative group">
               <button className="flex items-center gap-2 p-1 hover:bg-white/10 rounded-lg transition-colors">
                 <img 
-                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=40&h=40&fit=crop" 
+                  src="/src/assets/jaclyn.jpg" 
                   alt="User" 
                   className="w-8 h-8 rounded-full"
                 />
@@ -147,6 +167,7 @@ function TopNav({ setActiveTab }: TopNavProps) {
 
 function AppContent({ session, isLoading }: AppContentProps) {
   const [activeTab, setActiveTab] = useState<'onboarding' | 'dashboard'>('dashboard');
+  const [showScheduler, setShowScheduler] = useState(false);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -155,17 +176,20 @@ function AppContent({ session, isLoading }: AppContentProps) {
   if (!session) {
     return (
       <div className="min-h-screen bg-[#00112E]">
+        <BackgroundPattern />
         <Auth />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#00112E]">
-      <TopNav setActiveTab={setActiveTab} />
+    <div className="min-h-screen">
+      <BackgroundPattern />
+      <TopNav setActiveTab={setActiveTab} setShowScheduler={setShowScheduler} />
       <div className="max-w-7xl mx-auto px-4 py-6 min-h-[calc(100vh-80px)]">
-        {activeTab === 'dashboard' && <CanvasView setActiveTab={setActiveTab} />}
+        {activeTab === 'dashboard' && !showScheduler && <CanvasView setActiveTab={setActiveTab} />}
         {activeTab === 'onboarding' && <ClientOnboarding />}
+        {showScheduler && <AppointmentScheduler onBack={() => setShowScheduler(false)} />}
       </div>
     </div>
   );

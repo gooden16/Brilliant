@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ArrowLeft, Plus, Search, Building2, Phone, MapPin, Building } from 'lucide-react';
+import { logger } from '../../lib/logger';
 import PayeeForm from './PayeeForm';
 import PaymentForm from './PaymentForm';
 import { useSupabase } from '../../contexts/SupabaseContext';
@@ -53,7 +54,25 @@ export default function MoveMoneyView({ onBack }: MoveMoneyViewProps) {
   ]);
 
   const handlePayeeSubmit = async (payee: Omit<Payee, 'id'>) => {
-    // In a real app, we would save to Supabase here
+    if (!session?.user) {
+      logger.error('Attempted to submit payee without authentication');
+      return;
+    }
+
+    logger.info('Submitting new payee', { 
+      payeeType: payee.type,
+      paymentMethods: payee.paymentMethods.map(m => m.type)
+    });
+
+    try {
+      // In a real app, we would save to Supabase here
+      logger.info('Payee created successfully');
+    } catch (error) {
+      logger.error('Failed to create payee', { error });
+      alert('Failed to create payee. Please try again.');
+      return;
+    }
+
     setShowPayeeForm(false);
   };
 
@@ -123,12 +142,14 @@ export default function MoveMoneyView({ onBack }: MoveMoneyViewProps) {
                 className="w-full flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-                    {payee.type === 'business' ? (
-                      <Building2 className="w-6 h-6 text-dusty-pink" />
-                    ) : (
-                      <Phone className="w-6 h-6 text-dusty-pink" />
-                    )}
+                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-centsenter justify-center">
+                    <div className="flex items-center justify-center">
+                      {payee.type === 'business' ? (
+                        <Building2 className="w-6 h-6 text-dusty-pink" />
+                      ) : (
+                        <Phone className="w-6 h-6 text-dusty-pink" />
+                      )}
+                    </div>
                   </div>
                   <div className="text-left">
                     <div className="font-medium group-hover:text-cream transition-colors">
@@ -159,9 +180,18 @@ export default function MoveMoneyView({ onBack }: MoveMoneyViewProps) {
         </div>
 
         <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-          <h3 className="font-playfair text-lg mb-6">Scheduled Payments</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-playfair text-lg">Scheduled Money Movements</h3>
+            <button
+              onClick={() => setShowPayeeForm(true)}
+              className="px-4 py-2 bg-dusty-pink text-navy rounded-lg hover:bg-opacity-90 transition-colors font-medium flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add New Payee
+            </button>
+          </div>
           <div className="h-[400px] flex items-center justify-center text-cream/40">
-            No scheduled payments
+            No scheduled money movements
           </div>
         </div>
       </div>

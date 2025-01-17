@@ -1,5 +1,6 @@
 import { ArrowLeft, TrendingUp, Building2, Wallet, Activity, CreditCard, PiggyBank, Banknote, Receipt, Users, ArrowRightLeft, CreditCard as CardIcon, Paintbrush } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { logger } from '../../lib/logger';
 import type { Canvas } from '../../types';
 import { useSupabase } from '../../contexts/SupabaseContext';
 import MoveMoneyView from '../money/MoveMoneyView';
@@ -69,9 +70,14 @@ export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
   useEffect(() => {
     const fetchCanvasData = async () => {
       if (!session?.user) return;
+      logger.info('Fetching canvas data', { 
+        canvasId: canvas.id, 
+        canvasType: canvas.type 
+      });
 
       // Set default products for Property Co
       if (canvas.type === 'property') {
+        logger.info('Setting default property products');
         setProducts([
           {
             id: crypto.randomUUID(),
@@ -143,15 +149,30 @@ export default function CanvasDetail({ canvas, onBack }: CanvasDetailProps) {
             .eq('canvas_id', canvas.id)
         ]);
 
-        if (productsRes.error) throw productsRes.error;
-        if (metricsRes.error) throw metricsRes.error;
-        if (paymentsRes.error) throw paymentsRes.error;
+        if (productsRes.error) {
+          logger.error('Failed to fetch canvas products', { error: productsRes.error });
+          throw productsRes.error;
+        }
+        if (metricsRes.error) {
+          logger.error('Failed to fetch canvas metrics', { error: metricsRes.error });
+          throw metricsRes.error;
+        }
+        if (paymentsRes.error) {
+          logger.error('Failed to fetch payment methods', { error: paymentsRes.error });
+          throw paymentsRes.error;
+        }
+
+        logger.info('Canvas data fetched successfully', {
+          productsCount: productsRes.data?.length,
+          metricsCount: metricsRes.data?.length,
+          paymentMethodsCount: paymentsRes.data?.length
+        });
 
         setProducts(productsRes.data || []);
         setMetrics(metricsRes.data || []);
         setPaymentMethods(paymentsRes.data || []);
       } catch (error) {
-        console.error('Error fetching canvas data:', error);
+        logger.error('Error fetching canvas data', { error });
       } finally {
         setIsLoading(false);
       }
