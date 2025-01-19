@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { ArrowLeft, Calendar, RefreshCcw, Building2, Phone, MapPin, Building, ChevronDown, Check } from 'lucide-react';
+import { ArrowLeft, Calendar, RefreshCcw, Building2, Phone, MapPin, Building, ChevronDown, Check, Wallet, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
-import type { Payee } from '../../types';
+import type { Counterparty } from '../../types';
 import 'react-day-picker/dist/style.css';
 
 interface PaymentFormProps {
-  payee: Payee;
+  counterparty: Counterparty;
   onBack: () => void;
 }
 
@@ -21,8 +21,9 @@ interface RecurrenceDetails {
   quarterDay?: QuarterDay;
 }
 
-export default function PaymentForm({ payee, onBack }: PaymentFormProps) {
+export default function PaymentForm({ counterparty, onBack }: PaymentFormProps) {
   const [amount, setAmount] = useState('');
+  const [direction, setDirection] = useState<'in' | 'out'>(counterparty.isClientAccount ? 'in' : 'out');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [showCalendar, setShowCalendar] = useState(false);
   const [recurrence, setRecurrence] = useState<RecurrenceDetails>({ type: 'one-time' });
@@ -215,23 +216,32 @@ export default function PaymentForm({ payee, onBack }: PaymentFormProps) {
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <h2 className="text-2xl font-playfair">Move Money</h2>
+        <h2 className="text-2xl font-playfair">Schedule Money Movement</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
           <div className="flex items-center gap-4 mb-6">
             <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-              {payee.type === 'business' ? (
+              {counterparty.type === 'business' ? (
                 <Building2 className="w-6 h-6 text-dusty-pink" />
-              ) : (
+              ) : counterparty.type === 'individual' ? (
                 <Phone className="w-6 h-6 text-dusty-pink" />
+              ) : (
+                <Wallet className="w-6 h-6 text-dusty-pink" />
               )}
             </div>
             <div>
-              <h3 className="font-playfair text-lg">{payee.name}</h3>
+              <h3 className="font-playfair text-lg">
+                {counterparty.name}
+                {counterparty.isClientAccount && (
+                  <span className="ml-2 text-xs bg-light-blue/20 text-light-blue px-2 py-1 rounded-full">
+                    External Account
+                  </span>
+                )}
+              </h3>
               <div className="text-sm text-cream/60 flex items-center gap-2">
-                {payee.paymentMethods.map((method) => (
+                {counterparty.paymentMethods.map((method) => (
                   <div
                     key={method.type}
                     className="flex items-center gap-1"
@@ -247,6 +257,40 @@ export default function PaymentForm({ payee, onBack }: PaymentFormProps) {
           </div>
 
           <div className="space-y-6">
+            {counterparty.isClientAccount && (
+              <div>
+                <label className="block text-sm font-medium text-cream/80 mb-2">
+                  Direction
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setDirection('in')}
+                    className={`flex items-center justify-center gap-2 p-4 rounded-xl transition-colors ${
+                      direction === 'in'
+                        ? 'bg-deep-olive/20 text-deep-olive'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <ArrowDownLeft className="w-5 h-5" />
+                    Money In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDirection('out')}
+                    className={`flex items-center justify-center gap-2 p-4 rounded-xl transition-colors ${
+                      direction === 'out'
+                        ? 'bg-burgundy/20 text-burgundy'
+                        : 'bg-white/5 hover:bg-white/10'
+                    }`}
+                  >
+                    <ArrowUpRight className="w-5 h-5" />
+                    Money Out
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-cream/80 mb-2">
                 Amount

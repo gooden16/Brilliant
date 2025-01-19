@@ -30,8 +30,7 @@ export default function Auth() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin
-          options: {
+            emailRedirectTo: window.location.origin,
             data: {
               totp_secret: totpSecret
             }
