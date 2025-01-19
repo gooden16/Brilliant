@@ -193,6 +193,49 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isInitializingRecording, setIsInitializingRecording] = useState(false);
 
+  const handleSave = async () => {
+    if (!session?.user) {
+      alert('You must be logged in to save a canvas');
+      return;
+    }
+
+    try {
+      logger.info('Saving canvas', { 
+        name: canvasName,
+        blockCount: selectedBlocks.length 
+      });
+
+      const canvasId = crypto.randomUUID();
+      const { error } = await supabase
+        .from('canvases')
+        .insert([{
+          id: canvasId,
+          name: canvasName,
+          type: 'property',
+          key_metrics: selectedBlocks
+            .filter(b => b.type === 'metric')
+            .map(m => m.name),
+          features: selectedBlocks
+            .filter(b => b.type === 'feature')
+            .map(f => f.name),
+          users: selectedBlocks
+            .filter(b => b.type === 'user')
+            .map(u => u.name),
+          transcription: transcriptSegments.join('\n'),
+          status: 'draft',
+          user_id: session.user.id
+        }]);
+
+      if (error) throw error;
+      
+      logger.info('Canvas saved successfully', { canvasId });
+      setShowOnboarding(true);
+    } catch (error) {
+      logger.error('Failed to save canvas', { error });
+      alert('Failed to save canvas. Please try again.');
+    }
+  };
+
   const handleContextMenu = (e: React.MouseEvent, blockId: string) => {
     e.preventDefault();
     setContextMenu({
@@ -277,10 +320,17 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDraggingOver(false);
-    
+
     if (draggedBlock && !selectedBlocks.find(b => b.id === draggedBlock.id)) {
       const newBlock = { ...draggedBlock };
-      setSelectedBlocks(prev => [...prev, newBlock]);
+      setSelectedBlocks(prev => {
+        const newBlocks = [...prev, newBlock];
+        // Sort blocks by type: metrics first, then features, then users
+        return newBlocks.sort((a, b) => {
+          const typeOrder = { metric: 0, feature: 1, user: 2 };
+          return typeOrder[a.type] - typeOrder[b.type];
+        });
+      });
     }
     setDraggedBlock(null);
   };
@@ -320,7 +370,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
         <div className="grid grid-cols-2 gap-6">
           {/* Canvas Section */}
           <div className="space-y-6">
-            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 max-h-[600px] overflow-hidden">
+            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 max-h-[800px] overflow-hidden">
               <div className="flex items-center justify-between mb-6">
                 {isEditingTitle ? (
                   <input
@@ -347,7 +397,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`h-[500px] overflow-y-auto border-2 border-dashed rounded-xl p-4 transition-all duration-300 ${
+                className={`h-[700px] overflow-y-auto border-2 border-dashed rounded-xl p-4 transition-all duration-300 canvas-grid ${
                   selectedBlocks.length === 0 
                     ? isDraggingOver 
                       ? 'border-dusty-pink bg-white/5 scale-[1.02]'
@@ -375,9 +425,9 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
                         key={block.id}
                         onContextMenu={(e) => handleContextMenu(e, block.id)}
                         className={`p-4 rounded-xl flex items-center justify-between group animate-fadeIn ${
-                          block.type === 'metric' ? 'bg-dusty-pink/10 border border-dusty-pink/20' :
-                          block.type === 'feature' ? 'bg-gold/10 border border-gold/20' :
-                          'bg-light-blue/10 border border-light-blue/20'
+                          block.type === 'metric' ? 'bg-dusty-pink/10 border border-dusty-pink/20 hover:bg-dusty-pink/20' :
+                          block.type === 'feature' ? 'bg-gold/10 border border-gold/20 hover:bg-gold/20' :
+                          'bg-light-blue/10 border border-light-blue/20 hover:bg-light-blue/20'
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -397,7 +447,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
                             <Activity className="w-4 h-4 text-gold" />
                           )}
                           <div>
-                            <p className="text-sm font-medium">{block.name}</p>
+                            <p className="text-sm font-semibold tracking-wide">{block.name}</p>
                             <p className="text-xs text-cream/60">{block.description}</p>
                           </div>
                         </div>
@@ -416,7 +466,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
           </div>
 
           {/* Available Blocks Section */}
-          <div className="space-y-6">
+          <div className="space-y-6 h-[800px] flex flex-col">
             <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 max-h-[600px] overflow-y-auto">
               <h3 className="text-xl font-playfair mb-6">Available Blocks</h3>
               <div className="space-y-6">
@@ -498,9 +548,9 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
             </div>
             
             {/* Live Transcript Section */}
-            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 flex-grow">
               <h3 className="text-xl font-playfair mb-6">Live Transcript</h3>
-              <div className="space-y-4 max-h-[300px] overflow-y-auto">
+              <div className="space-y-4 h-[calc(100%-4rem)] overflow-y-auto">
                 {transcriptSegments.map((text, index) => (
                   <div
                     key={index}
@@ -534,7 +584,7 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
         {/* Confirm Canvas Button */}
         <button
           onClick={handleSave}
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-light-blue text-navy font-medium py-4 px-12 rounded-xl hover:bg-opacity-90 transition-colors flex items-center gap-2"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-light-blue text-navy font-medium py-4 px-12 rounded-xl hover:bg-opacity-90 transition-colors flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
         >
           <Save className="w-5 h-5" />
           Confirm Canvas
