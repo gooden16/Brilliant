@@ -104,4 +104,23 @@ export interface Payee {
     date: string;
   };
 }
-// Rest of the types remain the same...
+
+export interface BlockTemplate {
+  id: string;
+  type: 'metric' | 'feature' | 'user';
+  name: string;
+  icon?: string;
+  graphType?: 'bar' | 'line' | 'pie';
+  description: string;
+  position?: { x: number; y: number };
+  aiSuggested?: boolean;
+  aiReasoning?: string;
+  groupId?: string;
+  connectedTo?: string[];
+}
+
+export interface BlockGroup {
+  id: string;
+  name: string;
+  blocks: string[];
+}
