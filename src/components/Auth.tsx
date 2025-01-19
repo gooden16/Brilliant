@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Lock, Mail, Loader2 } from 'lucide-react';
+import { Mail, Loader2 } from 'lucide-react';
 import { logger } from '../lib/logger';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState('');
+
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,14 +18,12 @@ export default function Auth() {
     try {
       logger.info('Attempting authentication', { 
         isSignUp, 
-        email,
-        hasPassword: !!password 
+        email
       });
 
       if (isSignUp) {
         const { error } = await supabase.auth.signUp({
           email,
-          password,
           options: {
             emailRedirectTo: window.location.origin
           }
@@ -33,12 +31,11 @@ export default function Auth() {
         if (error) throw error;
         logger.info('Sign up successful', { email });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
+        const { data, error } = await supabase.auth.signInWithOtp({
+          email
         });
         if (error) throw error;
-        logger.info('Sign in successful', { email });
+        logger.info('Sign in email sent', { email });
       }
     } catch (error: any) {
       logger.error('Authentication failed', { 
@@ -51,6 +48,7 @@ export default function Auth() {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -85,22 +83,6 @@ export default function Auth() {
               required
               disabled={loading}
               placeholder="Enter your email"
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-cream/80 mb-2">
-              <Lock className="inline-block w-4 h-4 mr-2 text-dusty-pink" />
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-cream placeholder-cream/30 focus:ring-2 focus:ring-gold focus:border-transparent transition-colors"
-              required
-              disabled={loading}
-              placeholder="Enter your password"
             />
           </div>
 
