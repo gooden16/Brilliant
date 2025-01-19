@@ -44,6 +44,7 @@ interface BlockTemplate {
 export default function SessionRecorder({ onBack }: SessionRecorderProps) {
   const { session } = useSupabase();
   const [isRecording, setIsRecording] = useState(false);
+  const [canvasName, setCanvasName] = useState('');
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [showOnboarding, setShowOnboarding] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -304,7 +305,6 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
       return;
     }
 
-    const canvasName = `Canvas ${new Date().toLocaleDateString()}`;
     const canvasId = self.crypto.randomUUID();
 
     try {
@@ -381,7 +381,16 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
                 <ArrowLeft className="w-6 h-6" />
               </button>
             )}
-            <h2 className="text-2xl font-playfair">Canvas Builder</h2>
+            <div className="flex flex-col gap-1">
+              <h2 className="text-2xl font-playfair">Canvas Builder</h2>
+              <input
+                type="text"
+                value={canvasName}
+                onChange={(e) => setCanvasName(e.target.value)}
+                placeholder="Enter canvas name"
+                className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-cream placeholder-cream/30 focus:ring-2 focus:ring-dusty-pink focus:border-transparent transition-colors w-64"
+              />
+            </div>
           </div>
           <button
             onClick={toggleRecording}
@@ -395,14 +404,10 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
           </button>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          {/* Canvas Section */}
-          <div className="space-y-6">
-            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-playfair">Financial Advisory Canvas</h3>
-              </div>
-
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 gap-6">
+            {/* Canvas Section */}
+            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5 relative">
               <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -462,10 +467,8 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Available Blocks Section */}
-          <div className="space-y-6">
+            {/* Available Blocks Section */}
             <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
               <h3 className="text-xl font-playfair mb-6">Available Blocks</h3>
               <div className="space-y-6">
@@ -474,11 +477,12 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
                 <BlockList type="user" title="Users" />
               </div>
             </div>
+          </div>
 
-            {/* Live Transcript Section */}
-            <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
-              <h3 className="text-xl font-playfair mb-6">Live Transcript</h3>
-              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+          {/* Live Transcript Section */}
+          <div className="bg-navy/50 rounded-xl p-6 backdrop-blur-sm border border-white/5">
+            <h3 className="text-xl font-playfair mb-6">Live Transcript</h3>
+            <div className="space-y-4 max-h-[400px] overflow-y-auto">
                 {transcriptSegments.map((text, index) => (
                   <div
                     key={index}
@@ -503,12 +507,12 @@ export default function SessionRecorder({ onBack }: SessionRecorderProps) {
                   </div>
                 )}
               </div>
-            </div>
           </div>
         </div>
 
         <button
           onClick={handleSave}
+          disabled={!canvasName.trim()}
           className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-light-blue text-navy font-medium py-4 px-12 rounded-xl hover:bg-opacity-90 transition-colors flex items-center gap-2"
         >
           <Save className="w-5 h-5" />
