@@ -1,0 +1,43 @@
+/* Basic animations */
+@keyframes float {
+  0% {
+    transform: translateY(0px) rotate(6deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(4deg);
+  }
+  100% {
+    transform: translateY(0px) rotate(6deg);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Perspective */
+.perspective-800 {
+  perspective: 800px;
+}
+
+/* 3D transforms */
+.rotate-y-5 {
+  transform: rotateY(5deg);
+}
+
+.rotate-x-10 {
+  transform: rotateX(10deg);
+}
+
+.hover\:rotate-y-0:hover {
+  transform: rotateY(0deg);
+}
+
+.hover\:rotate-x-0:hover {
+  transform: rotateX(0deg);
+}
+
+/* Scale */
+.hover\:transform:hover {
+  transform: translateY(-5px);
+}
